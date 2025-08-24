@@ -1,0 +1,2503 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>服务开发 - Auto API Platform</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="assets/common-styles.css" rel="stylesheet">
+    <script src="assets/common-utils.js"></script>
+    <!-- Monaco Editor -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/loader.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        .dev-container {
+            display: flex;
+            height: 100vh;
+            background: #f5f7fa;
+        }
+
+        /* 左侧服务树区域 */
+        .left-panel {
+            width: 350px;
+            background: white;
+            border-right: 1px solid #e8e8e8;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .left-panel-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fafbfc;
+        }
+
+        .panel-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+        }
+
+        .service-filter {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e8e8e8;
+        }
+
+        .filter-group {
+            margin-bottom: 12px;
+        }
+
+        .filter-input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .filter-input:focus {
+            outline: none;
+            border-color: #1890ff;
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+        }
+
+        .service-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px 0;
+        }
+
+        .service-item {
+            padding: 12px 20px;
+            cursor: pointer;
+            border-left: 3px solid transparent;
+            transition: all 0.2s;
+            border-bottom: 1px solid #f5f5f5;
+        }
+
+        .service-item:hover {
+            background: #f5f5f5;
+        }
+
+        .service-item.active {
+            background: #e6f7ff;
+            border-left-color: #1890ff;
+        }
+
+        .service-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 4px;
+        }
+
+        .service-item-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .service-item-status {
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+
+        .service-item-meta {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .service-item-method {
+            font-weight: 500;
+            padding: 1px 4px;
+            border-radius: 2px;
+            font-size: 11px;
+        }
+
+        .service-item-path {
+            font-family: monospace;
+            background: #f5f5f5;
+            padding: 1px 4px;
+            border-radius: 2px;
+        }
+
+        /* 右侧编辑器区域 */
+        .right-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            background: white;
+        }
+
+        .right-panel-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fafbfc;
+        }
+
+        .service-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .service-name {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .service-path {
+            background: #f5f5f5;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .service-basic-info {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .service-meta {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 14px;
+        }
+
+        .service-description {
+            font-size: 12px;
+            color: #666;
+            font-style: italic;
+        }
+
+        .datasource-info {
+            background: #f0f2f5;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* 主编辑区域 */
+        .main-editor {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .editor-placeholder {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100%;
+            text-align: center;
+            color: #999;
+        }
+
+        .placeholder-content h3 {
+            color: #666;
+            margin-bottom: 8px;
+        }
+
+        .sql-editor-wrapper {
+            flex: 1;
+            position: relative;
+            min-height: 400px;
+            background: white;
+            border: 1px solid #e8e8e8;
+            border-radius: 4px;
+        }
+        
+        #sql-editor {
+            height: 100%;
+            width: 100%;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 16px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        .form-group label {
+            font-size: 12px;
+            font-weight: 500;
+            color: #333;
+        }
+
+        .form-group input,
+        .form-group select {
+            padding: 8px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #1890ff;
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+        }
+
+        .required {
+            color: #ff4d4f;
+        }
+
+        /* 弹窗样式 */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 600px;
+            max-height: 80vh;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-header {
+            padding: 20px 24px 16px;
+            border-bottom: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .modal-header h3 {
+            margin: 0;
+            font-size: 18px;
+            color: #333;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: #999;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .modal-close:hover {
+            color: #333;
+        }
+
+        .modal-body {
+            padding: 20px 24px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+
+        .modal-footer {
+            padding: 16px 24px 20px;
+            border-top: 1px solid #e8e8e8;
+            display: flex;
+            gap: 12px;
+            justify-content: flex-end;
+        }
+
+        .field-error {
+            color: #ff4d4f;
+            font-size: 12px;
+            margin-top: 4px;
+        }
+
+        /* 参数配置面板 */
+        .parameter-panel {
+            position: fixed;
+            top: 0;
+            right: -600px;
+            width: 600px;
+            height: 100vh;
+            background: white;
+            box-shadow: -2px 0 8px rgba(0, 0, 0, 0.15);
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            transition: right 0.3s ease;
+        }
+
+        .parameter-panel.show {
+            right: 0;
+        }
+
+        .param-panel-header {
+            padding: 16px 20px;
+            border-bottom: 1px solid #e8e8e8;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fafbfc;
+        }
+
+        .param-panel-title {
+            margin: 0;
+            font-size: 16px;
+            color: #333;
+        }
+
+        .param-panel-close {
+            background: none;
+            border: none;
+            font-size: 16px;
+            color: #999;
+            cursor: pointer;
+            padding: 4px;
+        }
+
+        .param-panel-close:hover {
+            color: #333;
+        }
+
+        .param-panel-content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+        }
+
+        .param-section {
+            margin-bottom: 16px;
+        }
+
+        .param-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .param-section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 12px;
+            background: #f8f9fa;
+            border: 1px solid #e8e8e8;
+            border-radius: 6px;
+            cursor: pointer;
+            user-select: none;
+            transition: background-color 0.2s;
+        }
+
+        .param-section-header:hover {
+            background: #e9ecef;
+        }
+
+        .param-section-header h4 {
+            margin: 0;
+            font-size: 14px;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-collapse-icon {
+            font-size: 12px;
+            transition: transform 0.2s;
+        }
+
+        .param-section.collapsed .section-collapse-icon {
+            transform: rotate(-90deg);
+        }
+
+        .param-section-content {
+            transition: max-height 0.3s ease-out;
+            overflow: hidden;
+            margin-top: 8px;
+            max-height: 1000px; /* 默认展开状态 */
+        }
+
+        .param-section.collapsed .param-section-content {
+            max-height: 0;
+            margin-top: 0;
+        }
+
+        .param-section-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .param-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .param-item {
+            border: 1px solid #e8e8e8;
+            border-radius: 6px;
+            background: white;
+            margin-bottom: 6px;
+            overflow: hidden;
+        }
+
+        .param-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background: #f8f9fa;
+            border-bottom: 1px solid #e8e8e8;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        .param-item-header:hover {
+            background: #e9ecef;
+        }
+
+        .param-item-title {
+            font-weight: 500;
+            font-size: 13px;
+            color: #495057;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .param-collapse-icon {
+            font-size: 10px;
+            transition: transform 0.2s;
+        }
+
+        .param-item.collapsed .param-collapse-icon {
+            transform: rotate(-90deg);
+        }
+
+        .param-form-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr 3fr;
+            gap: 8px;
+            align-items: center;
+            padding: 8px 12px;
+        }
+
+        .param-form-grid .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .param-content {
+            transition: max-height 0.3s ease-out;
+            overflow: hidden;
+            max-height: 500px; /* 默认展开状态 */
+        }
+
+        .param-item.collapsed .param-content {
+            max-height: 0;
+        }
+
+        .param-form-grid label {
+            font-size: 13px;
+            font-weight: 500;
+            color: #555;
+        }
+
+        .param-item-name {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #d9d9d9;
+            border-radius: 4px;
+            font-size: 14px;
+            background: white;
+        }
+
+        .param-item-name:focus {
+            outline: none;
+            border-color: #1890ff;
+            box-shadow: 0 0 0 2px rgba(24, 144, 255, 0.2);
+        }
+
+        .param-item-actions {
+            display: flex;
+            gap: 4px;
+        }
+
+        .param-item-action {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 2px 4px;
+            border-radius: 2px;
+            font-size: 12px;
+        }
+
+        .param-item-action:hover {
+            background: #e8e8e8;
+        }
+
+        .nested-config {
+            margin-top: 12px;
+            padding: 12px;
+            background: #f8f9fa;
+            border: 1px dashed #d1d5db;
+            border-radius: 4px;
+        }
+
+        .nested-params {
+            margin-bottom: 12px;
+        }
+
+        .nested-param-item {
+            padding: 8px;
+            background: white;
+            border: 1px solid #e5e7eb;
+            border-radius: 4px;
+            margin-bottom: 8px;
+        }
+
+        .nested-param-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .param-type-select,
+        .param-description,
+        .nested-param-name,
+        .nested-param-type,
+        .nested-param-description {
+            width: 100%;
+            padding: 4px 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 3px;
+            font-size: 12px;
+        }
+
+        .param-item-name {
+            width: 100%;
+            padding: 6px 8px;
+            border: 1px solid #d1d5db;
+            border-radius: 3px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* 通知样式 */
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border-radius: 8px;
+            padding: 12px 16px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            z-index: 10001;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transform: translateX(100%);
+            opacity: 0;
+            transition: all 0.3s ease;
+            max-width: 300px;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        
+        .notification-success {
+            border-left: 4px solid #52c41a;
+        }
+        
+        .notification-success i {
+            color: #52c41a;
+        }
+        
+        .notification-error {
+            border-left: 4px solid #ff4d4f;
+        }
+        
+        .notification-error i {
+            color: #ff4d4f;
+        }
+        
+        .notification-warning {
+            border-left: 4px solid #faad14;
+        }
+        
+        .notification-warning i {
+            color: #faad14;
+        }
+        
+        .notification-info {
+            border-left: 4px solid #1890ff;
+        }
+        
+        .notification-info i {
+            color: #1890ff;
+        }
+
+        /* 方法标签样式 */
+        .method-tag {
+            font-size: 11px;
+            font-weight: bold;
+            padding: 2px 6px;
+            border-radius: 3px;
+            text-transform: uppercase;
+        }
+        
+        .method-tag.get {
+            background: #e6f7ff;
+            color: #1890ff;
+        }
+        
+        .method-tag.post {
+            background: #f6ffed;
+            color: #52c41a;
+        }
+        
+        .method-tag.put {
+            background: #fff7e6;
+            color: #fa8c16;
+        }
+        
+        .method-tag.delete {
+            background: #fff1f0;
+            color: #ff4d4f;
+        }
+        
+        /* 状态标签样式 */
+        .status-draft {
+            background: #fafafa;
+            color: #666;
+        }
+        
+        .status-published {
+            background: #f6ffed;
+            color: #52c41a;
+        }
+        
+        .status-disabled {
+            background: #fff1f0;
+            color: #ff4d4f;
+        }
+
+        /* 底部状态栏 */
+        .status-bar {
+            height: 28px;
+            background: #007acc;
+            color: white;
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            font-size: 12px;
+            gap: 20px;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* 响应式设计 */
+        @media (max-width: 1024px) {
+            .left-panel {
+                width: 280px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .dev-container {
+                flex-direction: column;
+            }
+            
+            .left-panel {
+                width: 100%;
+                height: 200px;
+            }
+            
+            .right-panel {
+                height: calc(100vh - 200px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="dev-container">
+        <!-- 左侧服务树 -->
+        <div class="left-panel">
+            <div class="left-panel-header">
+                <h2 class="panel-title">
+                    <i class="fas fa-sitemap"></i> 服务开发
+                </h2>
+                <a href="apiservice-table.html" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-arrow-left"></i> 返回
+                </a>
+            </div>
+
+            <div class="service-filter">
+                <div class="filter-group">
+                    <input type="text" class="filter-input" id="service-search" placeholder="搜索服务...">
+                </div>
+                <div class="filter-group">
+                    <button class="btn btn-primary btn-sm" onclick="showCreateServiceModal()" style="width: 100%;">
+                        <i class="fas fa-plus"></i> 新建API服务
+                    </button>
+                </div>
+            </div>
+
+            <div class="service-list" id="service-list">
+                <!-- 服务列表将通过JavaScript动态生成 -->
+            </div>
+        </div>
+
+        <!-- 右侧编辑器 -->
+        <div class="right-panel">
+            <div class="right-panel-header">
+                <div class="service-info" id="service-header" style="display: none;">
+                    <div class="service-basic-info">
+                        <span class="service-name" id="current-service-name">未选择服务</span>
+                        <div class="service-meta">
+                            <span class="method-tag" id="current-method">GET</span>
+                            <span class="service-path" id="current-service-path">/api/path</span>
+                            <span class="datasource-info" id="current-datasource-info">数据源</span>
+                        </div>
+                        <div class="service-description" id="current-description">服务描述</div>
+                    </div>
+                </div>
+                <div class="action-buttons">
+                    <button class="btn btn-secondary btn-sm" onclick="showParameterPanel()" id="param-btn">
+                        <i class="fas fa-sliders-h"></i> 参数配置
+                    </button>
+                    <button class="btn btn-secondary btn-sm" onclick="testCurrentService()" id="test-btn">
+                        <i class="fas fa-flask"></i> 测试
+                    </button>
+                    <button class="btn btn-warning btn-sm" onclick="saveCurrentService()" id="save-btn">
+                        <i class="fas fa-save"></i> 保存
+                    </button>
+                    <button class="btn btn-primary btn-sm" onclick="publishCurrentService()" id="publish-btn">
+                        <i class="fas fa-rocket"></i> 发布
+                    </button>
+                </div>
+            </div>
+
+            <!-- 主编辑区域 -->
+            <div class="main-editor" id="main-editor">
+                <div class="editor-placeholder" id="editor-placeholder">
+                    <div class="placeholder-content">
+                        <i class="fas fa-code" style="font-size: 64px; color: #ddd; margin-bottom: 20px;"></i>
+                        <h3>请选择或创建一个API服务</h3>
+                        <p>从左侧服务列表中选择一个服务进行编辑，或点击"新建API服务"创建新服务</p>
+                    </div>
+                </div>
+                <div class="sql-editor-wrapper" id="sql-editor-wrapper" style="display: none;">
+                    <div class="sql-editor-toolbar" style="padding: 8px 12px; border-bottom: 1px solid #e8e8e8; background: #fafbfc; display: flex; align-items: center; gap: 12px;">
+                        <label style="font-size: 12px; color: #666; margin: 0;">数据库:</label>
+                        <select id="database-selector" style="padding: 4px 8px; border: 1px solid #d9d9d9; border-radius: 3px; font-size: 12px; background: white;">
+                            <option value="">选择数据库...</option>
+                        </select>
+                        <button class="btn btn-sm btn-secondary" onclick="refreshDatabaseSchema()" title="刷新数据库结构">
+                            <i class="fas fa-sync"></i>
+                        </button>
+                    </div>
+                    <div id="sql-editor"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 参数配置侧边面板 -->
+        <div class="parameter-panel" id="parameter-panel">
+            <div class="param-panel-header">
+                <h3 class="param-panel-title">参数配置</h3>
+                <button class="param-panel-close" onclick="hideParameterPanel()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="param-panel-content">
+                <div class="param-section" id="input-param-section">
+                    <div class="param-section-header" onclick="toggleParamSection('input-param-section')">
+                        <h4>
+                            <i class="fas fa-chevron-down section-collapse-icon"></i>
+                            <i class="fas fa-arrow-right" style="color: #28a745; margin-right: 4px;"></i>
+                            输入参数
+                            <span class="param-count" id="input-param-count">(0)</span>
+                        </h4>
+                        <div class="param-section-actions">
+                            <button class="btn btn-sm btn-secondary" onclick="addInputParameter(); event.stopPropagation();">
+                                <i class="fas fa-plus"></i> 添加
+                            </button>
+                        </div>
+                    </div>
+                    <div class="param-section-content">
+                        <div class="param-list" id="input-params">
+                            <!-- 输入参数列表 -->
+                        </div>
+                    </div>
+                </div>
+
+                <div class="param-section" id="output-param-section">
+                    <div class="param-section-header" onclick="toggleParamSection('output-param-section')">
+                        <h4>
+                            <i class="fas fa-chevron-down section-collapse-icon"></i>
+                            <i class="fas fa-arrow-left" style="color: #1890ff; margin-right: 4px;"></i>
+                            输出结构
+                            <span class="param-count" id="output-param-count">(0)</span>
+                        </h4>
+                        <div class="param-section-actions">
+                            <button class="btn btn-sm btn-secondary" onclick="addOutputParameter(); event.stopPropagation();">
+                                <i class="fas fa-plus"></i> 添加
+                            </button>
+                        </div>
+                    </div>
+                    <div class="param-section-content">
+                        <div class="param-list" id="output-params">
+                            <!-- 输出参数列表 -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="param-panel-footer" style="padding: 16px 20px; border-top: 1px solid #e8e8e8; display: flex; gap: 12px; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="hideParameterPanel()">
+                    取消
+                </button>
+                <button class="btn btn-primary" onclick="saveParameterConfig(); hideParameterPanel();">
+                    <i class="fas fa-save"></i> 应用配置
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 新建服务弹窗 -->
+    <div class="modal-overlay" id="create-service-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>新建API服务</h3>
+                <button class="modal-close" onclick="hideCreateServiceModal()">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            
+            <div class="modal-body">
+                <form id="create-service-form">
+                    <div class="form-group">
+                        <label>服务名称 <span class="required">*</span></label>
+                        <input type="text" id="new-service-name" name="name" placeholder="请输入服务名称" required>
+                        <div class="field-error" id="name-error" style="display: none;"></div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>请求方法 <span class="required">*</span></label>
+                            <select id="new-service-method" name="method" required>
+                                <option value="GET">GET</option>
+                                <option value="POST">POST</option>
+                                <option value="PUT">PUT</option>
+                                <option value="DELETE">DELETE</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>URL路径 <span class="required">*</span></label>
+                            <input type="text" id="new-service-path" name="path" placeholder="/api/your-endpoint" required>
+                            <div class="field-error" id="path-error" style="display: none;"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>数据源类型 <span class="required">*</span></label>
+                            <select id="new-datasource-type" required onchange="filterDatasourcesByType()">
+                                <option value="">请选择数据源类型</option>
+                                <option value="MYSQL">🐬 MySQL</option>
+                                <option value="POSTGRESQL">🐘 PostgreSQL</option>
+                                <option value="H2">💾 H2</option>
+                                <option value="ORACLE">🏢 Oracle</option>
+                                <option value="MONGODB">🍃 MongoDB</option>
+                                <option value="ELASTICSEARCH">🔍 Elasticsearch</option>
+                                <option value="CLICKHOUSE">📊 ClickHouse</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>数据源 <span class="required">*</span></label>
+                            <select id="new-service-datasource" name="dataSourceId" required>
+                                <option value="">请先选择数据源类型</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>服务描述</label>
+                        <textarea id="new-service-description" name="description" placeholder="请输入服务描述" rows="3"></textarea>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" onclick="hideCreateServiceModal()">取消</button>
+                <button type="button" class="btn btn-primary" onclick="createService()" id="create-service-btn">
+                    <i class="fas fa-plus"></i> 创建服务
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 状态栏 -->
+    <div class="status-bar">
+        <div class="status-item">
+            <i class="fas fa-circle" id="status-indicator" style="color: #28a745;"></i>
+            <span id="status-text">就绪</span>
+        </div>
+        <div class="status-item">
+            <i class="fas fa-database"></i>
+            <span id="current-datasource">未选择数据源</span>
+        </div>
+        <div class="status-item">
+            <i class="fas fa-clock"></i>
+            <span id="last-saved">未保存</span>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8080';
+        
+        // 全局状态
+        let currentService = null;
+        let currentServiceId = null;
+        let isEditMode = false;
+        let sqlEditor, paramsEditor, responseEditor;
+        let datasources = [];
+        let services = [];
+        let datasourcesLoaded = false;
+
+        // 页面初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查登录状态
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // 检查是否是编辑模式
+            const urlParams = new URLSearchParams(window.location.search);
+            const serviceId = urlParams.get('id');
+            if (serviceId) {
+                isEditMode = true;
+                currentServiceId = serviceId;
+            }
+
+            // 初始化Monaco编辑器
+            initializeEditors();
+            
+            // 加载数据
+            loadDataSources();
+            loadServices();
+            
+            // 如果是编辑模式，加载服务数据
+            if (isEditMode && currentServiceId) {
+                loadServiceForEdit(currentServiceId);
+            }
+
+            // 绑定事件
+            bindEvents();
+        });
+
+        // 全局变量存储数据库架构
+        let databaseSchema = {};
+        let currentDataSource = null;
+
+        // 初始化Monaco编辑器
+        function initializeEditors() {
+            require.config({ 
+                paths: { 
+                    'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs' 
+                }
+            });
+
+            require(['vs/editor/editor.main'], function() {
+                try {
+                    // SQL编辑器
+                    const sqlEditorContainer = document.getElementById('sql-editor');
+                    if (sqlEditorContainer) {
+                        sqlEditor = monaco.editor.create(sqlEditorContainer, {
+                            value: 'SELECT * FROM your_table WHERE condition = :param',
+                            language: 'sql',
+                            theme: 'vs',
+                            fontSize: 14,
+                            minimap: { enabled: false },
+                            scrollBeyondLastLine: false,
+                            automaticLayout: true,
+                            suggestOnTriggerCharacters: true,
+                            quickSuggestions: true
+                        });
+
+                        // 设置编辑器变化监听
+                        sqlEditor.onDidChangeModelContent(() => {
+                            updateStatus('编辑中...', 'warning');
+                        });
+
+                        // 注册SQL自动完成提供程序
+                        registerSqlCompletionProvider();
+                        
+                        console.log('✅ SQL编辑器初始化成功');
+                    } else {
+                        console.error('❌ 找不到sql-editor容器');
+                    }
+                } catch (error) {
+                    console.error('❌ 编辑器初始化失败:', error);
+                }
+            });
+        }
+
+        // 注册SQL自动完成提供程序
+        function registerSqlCompletionProvider() {
+            if (!monaco) return;
+            
+            monaco.languages.registerCompletionItemProvider('sql', {
+                provideCompletionItems: function(model, position) {
+                    const suggestions = [];
+                    
+                    // SQL关键字建议
+                    const sqlKeywords = [
+                        'SELECT', 'FROM', 'WHERE', 'JOIN', 'INNER JOIN', 'LEFT JOIN', 'RIGHT JOIN',
+                        'ORDER BY', 'GROUP BY', 'HAVING', 'INSERT', 'UPDATE', 'DELETE', 'CREATE',
+                        'DROP', 'ALTER', 'INDEX', 'DISTINCT', 'UNION', 'LIMIT', 'OFFSET',
+                        'AND', 'OR', 'NOT', 'IN', 'EXISTS', 'BETWEEN', 'LIKE', 'IS NULL', 'IS NOT NULL'
+                    ];
+                    
+                    sqlKeywords.forEach(keyword => {
+                        suggestions.push({
+                            label: keyword,
+                            kind: monaco.languages.CompletionItemKind.Keyword,
+                            insertText: keyword
+                        });
+                    });
+                    
+                    // 表名建议
+                    if (databaseSchema.tables) {
+                        databaseSchema.tables.forEach(table => {
+                            suggestions.push({
+                                label: table.name,
+                                kind: monaco.languages.CompletionItemKind.Class,
+                                insertText: table.name,
+                                detail: `表: ${table.name}`,
+                                documentation: table.comment || ''
+                            });
+                        });
+                    }
+                    
+                    // 字段名建议
+                    if (databaseSchema.tables) {
+                        databaseSchema.tables.forEach(table => {
+                            if (table.columns) {
+                                table.columns.forEach(column => {
+                                    suggestions.push({
+                                        label: column.name,
+                                        kind: monaco.languages.CompletionItemKind.Field,
+                                        insertText: column.name,
+                                        detail: `${table.name}.${column.name} (${column.type})`,
+                                        documentation: column.comment || ''
+                                    });
+                                });
+                            }
+                        });
+                    }
+                    
+                    return { suggestions: suggestions };
+                }
+            });
+        }
+
+        // 加载数据源列表
+        async function loadDataSources() {
+            try {
+                console.log('开始加载数据源...');
+                const response = await fetch(`${API_BASE_URL}/api/datasources`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        datasources = result.data;
+                        datasourcesLoaded = true;
+                        console.log('✅ 数据源加载成功:', datasources);
+                        populateDataSourceSelects();
+                        rebuildServiceTree();
+                    } else {
+                        console.error('❌ 数据源API返回失败:', result.message);
+                    }
+                } else {
+                    console.error('❌ 数据源API请求失败: HTTP', response.status);
+                }
+            } catch (error) {
+                console.error('❌ 加载数据源异常:', error);
+            }
+        }
+
+        // 填充数据源选择框
+        function populateDataSourceSelects() {
+            // 填充新建服务弹窗中的数据源类型选择框已经在HTML中静态定义
+            // 这里只需要确保数据源列表数据可用
+            console.log('已加载数据源:', datasources.length, '个');
+            if (datasources && datasources.length > 0) {
+                console.log('数据源详情:', datasources);
+                datasources.forEach(ds => {
+                    console.log(`- ${ds.name}: ${ds.type} @ ${ds.host}:${ds.port}`);
+                });
+            }
+        }
+
+        // 加载API服务列表
+        async function loadServices() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/services`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        services = result.data.content || result.data || [];
+                        console.log('已加载服务:', services.length, '个');
+                        rebuildServiceTree();
+                    }
+                }
+            } catch (error) {
+                console.error('加载服务列表失败:', error);
+            }
+        }
+
+        // 重建服务列表
+        function rebuildServiceTree() {
+            const serviceList = document.getElementById('service-list');
+            
+            if (!services || services.length === 0) {
+                serviceList.innerHTML = `
+                    <div class="service-item" style="text-align: center; color: #999; padding: 40px 20px;">
+                        <i class="fas fa-inbox" style="font-size: 24px; margin-bottom: 8px; display: block;"></i>
+                        暂无服务，点击上方新建按钮创建第一个服务
+                    </div>
+                `;
+                return;
+            }
+
+            // 应用搜索过滤
+            const searchTerm = document.getElementById('service-search').value.toLowerCase();
+            const filteredServices = services.filter(service => {
+                if (!searchTerm) return true;
+                return service.name.toLowerCase().includes(searchTerm) ||
+                       (service.path && service.path.toLowerCase().includes(searchTerm)) ||
+                       (service.description && service.description.toLowerCase().includes(searchTerm));
+            });
+
+            if (filteredServices.length === 0) {
+                serviceList.innerHTML = `
+                    <div class="service-item" style="text-align: center; color: #999; padding: 40px 20px;">
+                        <i class="fas fa-search" style="font-size: 24px; margin-bottom: 8px; display: block;"></i>
+                        未找到匹配的服务
+                    </div>
+                `;
+                return;
+            }
+
+            // 渲染服务列表
+            const serviceItems = filteredServices.map(service => {
+                const datasource = datasources.find(ds => ds.id === service.dataSourceId);
+                const isActive = service.id == currentServiceId ? 'active' : '';
+                
+                return `
+                    <div class="service-item ${isActive}" onclick="loadService(${service.id})">
+                        <div class="service-item-header">
+                            <span class="service-item-name">${service.name}</span>
+                            <span class="service-item-status ${getStatusClass(service.status || 'DRAFT', 'service')}">${getStatusText(service.status || 'DRAFT', 'service')}</span>
+                        </div>
+                        <div class="service-item-meta">
+                            <span class="service-item-method ${getMethodClass(service.method)}">${service.method || 'GET'}</span>
+                            <span class="service-item-path">${service.path || '/api/path'}</span>
+                        </div>
+                        ${service.description ? `<div style="font-size: 12px; color: #999; margin-top: 4px;">${service.description}</div>` : ''}
+                        ${datasource ? `<div style="font-size: 11px; color: #666; margin-top: 4px;"><i class="${getDatabaseIcon(datasource.type)}" style="margin-right: 4px;"></i>${datasource.name}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+
+            serviceList.innerHTML = serviceItems;
+        }
+
+        // 绑定事件
+        function bindEvents() {
+            // 服务搜索
+            document.getElementById('service-search').addEventListener('input', function() {
+                rebuildServiceTree();
+            });
+
+            // 服务搜索回车事件
+            document.getElementById('service-search').addEventListener('keypress', function(e) {
+                if (e.key === 'Enter') {
+                    rebuildServiceTree();
+                }
+            });
+        }
+
+        // 数据源类型筛选
+        function filterDataSources() {
+            const typeFilter = document.getElementById('datasource-type-filter').value;
+            const datasourceSelect = document.getElementById('datasource-filter');
+            
+            datasourceSelect.innerHTML = '<option value="">全部数据源</option>';
+            
+            const filteredDatasources = typeFilter ? 
+                datasources.filter(ds => ds.type === typeFilter) : 
+                datasources;
+            
+            filteredDatasources.forEach(datasource => {
+                const option = document.createElement('option');
+                option.value = datasource.id;
+                option.textContent = `${datasource.name} (${datasource.type})`;
+                datasourceSelect.appendChild(option);
+            });
+        }
+
+        // 切换选项卡
+        function switchTab(tabName) {
+            // 更新选项卡状态
+            document.querySelectorAll('.editor-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelector(`.editor-tab:nth-child(${getTabIndex(tabName)})`).classList.add('active');
+
+            // 显示对应内容
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.style.display = 'none';
+            });
+            document.getElementById(`${tabName}-tab`).style.display = 'block';
+
+            // 如果是编辑器选项卡，触发布局更新
+            if (['sql', 'params', 'response'].includes(tabName)) {
+                setTimeout(() => {
+                    const editor = getEditorByTab(tabName);
+                    if (editor) {
+                        editor.layout();
+                    }
+                }, 100);
+            }
+        }
+
+        function getTabIndex(tabName) {
+            const tabs = ['config', 'sql', 'params', 'response'];
+            return tabs.indexOf(tabName) + 1;
+        }
+
+        function getEditorByTab(tabName) {
+            switch(tabName) {
+                case 'sql': return sqlEditor;
+                case 'params': return paramsEditor;
+                case 'response': return responseEditor;
+                default: return null;
+            }
+        }
+
+        // 创建新服务
+        function createNewService() {
+            isEditMode = false;
+            currentServiceId = null;
+            currentService = null;
+            
+            clearForm();
+            updateServiceInfo(null);
+            updateStatus('创建新服务', 'info');
+            
+            // 重新渲染服务列表以移除active状态
+            rebuildServiceTree();
+        }
+
+        // 加载服务进行编辑
+        async function loadService(serviceId) {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/services/${serviceId}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        currentService = result.data;
+                        currentServiceId = serviceId;
+                        isEditMode = true;
+                        
+                        populateForm(currentService);
+                        updateServiceInfo(currentService);
+                        loadParameterConfig(currentService);
+                        updateStatus('服务已加载', 'success');
+                        
+                        // 更新服务列表的active状态
+                        rebuildServiceTree();
+                    }
+                }
+            } catch (error) {
+                updateStatus('加载服务失败', 'error');
+                console.error('加载服务失败:', error);
+            }
+        }
+
+        // 加载编辑模式的服务
+        function loadServiceForEdit(serviceId) {
+            loadService(serviceId);
+        }
+
+        // 清空编辑器
+        function clearForm() {
+            if (sqlEditor) sqlEditor.setValue('SELECT * FROM your_table WHERE condition = :param');
+        }
+
+        // 填充编辑器
+        function populateForm(service) {
+            console.log('开始填充编辑器，服务:', service);
+            
+            // 显示编辑器，隐藏占位符
+            const placeholder = document.getElementById('editor-placeholder');
+            const wrapper = document.getElementById('sql-editor-wrapper');
+            
+            if (placeholder && wrapper) {
+                placeholder.style.display = 'none';
+                wrapper.style.display = 'block';
+                console.log('✅ 编辑器容器显示状态已切换');
+            }
+            
+            // 设置SQL内容
+            if (sqlEditor) {
+                const sqlContent = service.sqlContent || 'SELECT * FROM your_table WHERE condition = :param';
+                sqlEditor.setValue(sqlContent);
+                console.log('✅ SQL内容已设置:', sqlContent);
+                
+                // 延迟触发编辑器布局更新，确保容器已显示
+                setTimeout(() => {
+                    if (sqlEditor) {
+                        sqlEditor.layout();
+                        sqlEditor.focus();
+                        console.log('✅ 编辑器布局已更新');
+                    }
+                }, 200);
+            } else {
+                console.error('❌ SQL编辑器未初始化');
+                // 如果编辑器未初始化，尝试重新初始化
+                initializeEditors();
+            }
+        }
+
+        // 更新服务信息显示
+        function updateServiceInfo(service) {
+            const serviceHeader = document.getElementById('service-header');
+            const serviceName = document.getElementById('current-service-name');
+            const serviceMethod = document.getElementById('current-method');
+            const servicePath = document.getElementById('current-service-path');
+            const datasourceInfo = document.getElementById('current-datasource-info');
+            const description = document.getElementById('current-description');
+
+            if (service) {
+                serviceHeader.style.display = 'flex';
+                serviceName.textContent = service.name || '未命名服务';
+                serviceMethod.textContent = service.method || 'GET';
+                serviceMethod.className = `method-tag ${getMethodClass(service.method)}`;
+                servicePath.textContent = service.path || '/api/path';
+                
+                // 显示数据源信息
+                const datasource = datasources.find(ds => ds.id === service.dataSourceId);
+                if (datasource) {
+                    datasourceInfo.innerHTML = `<i class="${getDatabaseIcon(datasource.type)}" style="margin-right: 4px;"></i>${datasource.name}`;
+                    // 设置当前数据源并加载数据库架构
+                    currentDataSource = datasource;
+                    loadDatabaseSchema(datasource);
+                } else {
+                    datasourceInfo.textContent = '未知数据源';
+                    currentDataSource = null;
+                }
+                
+                description.textContent = service.description || '无描述';
+                
+                // 更新状态栏数据源信息
+                if (datasource) {
+                    document.getElementById('current-datasource').textContent = `${datasource.name} (${datasource.type})`;
+                }
+            } else {
+                serviceHeader.style.display = 'none';
+                serviceName.textContent = '未选择服务';
+                document.getElementById('current-datasource').textContent = '未选择数据源';
+                currentDataSource = null;
+            }
+        }
+
+        // 加载数据库架构
+        async function loadDatabaseSchema(datasource) {
+            if (!datasource) return;
+            
+            try {
+                console.log('正在加载数据库架构:', datasource.name);
+                const response = await fetch(`${API_BASE_URL}/api/datasources/${datasource.id}/schema`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    if (result.success) {
+                        databaseSchema = result.data;
+                        populateDatabaseSelector(databaseSchema);
+                        console.log('✅ 数据库架构加载成功:', databaseSchema);
+                    } else {
+                        console.warn('⚠️ 数据库架构加载失败:', result.message);
+                        // 如果后端未实现，则使用模拟数据
+                        loadMockDatabaseSchema(datasource);
+                    }
+                } else {
+                    console.warn('⚠️ 数据库架构API请求失败:', response.status);
+                    // 使用模拟数据
+                    loadMockDatabaseSchema(datasource);
+                }
+            } catch (error) {
+                console.error('❌ 加载数据库架构异常:', error);
+                // 使用模拟数据
+                loadMockDatabaseSchema(datasource);
+            }
+        }
+
+        // 加载模拟数据库架构（用于演示）
+        function loadMockDatabaseSchema(datasource) {
+            console.log('使用模拟数据库架构');
+            
+            if (datasource.type === 'H2') {
+                databaseSchema = {
+                    databases: ['PUBLIC'],
+                    tables: [
+                        {
+                            name: 'users',
+                            comment: '用户表',
+                            columns: [
+                                { name: 'id', type: 'BIGINT', comment: '用户ID' },
+                                { name: 'username', type: 'VARCHAR(100)', comment: '用户名' },
+                                { name: 'email', type: 'VARCHAR(255)', comment: '邮箱' },
+                                { name: 'created_at', type: 'TIMESTAMP', comment: '创建时间' },
+                                { name: 'updated_at', type: 'TIMESTAMP', comment: '更新时间' }
+                            ]
+                        },
+                        {
+                            name: 'api_services',
+                            comment: 'API服务表',
+                            columns: [
+                                { name: 'id', type: 'BIGINT', comment: '服务ID' },
+                                { name: 'name', type: 'VARCHAR(255)', comment: '服务名称' },
+                                { name: 'path', type: 'VARCHAR(500)', comment: 'API路径' },
+                                { name: 'method', type: 'VARCHAR(10)', comment: 'HTTP方法' },
+                                { name: 'sql_content', type: 'CLOB', comment: 'SQL内容' },
+                                { name: 'data_source_id', type: 'BIGINT', comment: '数据源ID' }
+                            ]
+                        },
+                        {
+                            name: 'data_sources',
+                            comment: '数据源表',
+                            columns: [
+                                { name: 'id', type: 'BIGINT', comment: '数据源ID' },
+                                { name: 'name', type: 'VARCHAR(255)', comment: '数据源名称' },
+                                { name: 'type', type: 'VARCHAR(50)', comment: '数据源类型' },
+                                { name: 'host', type: 'VARCHAR(255)', comment: '主机地址' },
+                                { name: 'port', type: 'INTEGER', comment: '端口' },
+                                { name: 'database_name', type: 'VARCHAR(255)', comment: '数据库名' }
+                            ]
+                        }
+                    ]
+                };
+            } else {
+                // 其他数据库类型的模拟数据
+                databaseSchema = {
+                    databases: ['test', 'main'],
+                    tables: [
+                        {
+                            name: 'sample_table',
+                            comment: '示例表',
+                            columns: [
+                                { name: 'id', type: 'INT', comment: 'ID' },
+                                { name: 'name', type: 'VARCHAR(255)', comment: '名称' }
+                            ]
+                        }
+                    ]
+                };
+            }
+            
+            populateDatabaseSelector(databaseSchema);
+        }
+
+        // 填充数据库选择器
+        function populateDatabaseSelector(schema) {
+            const selector = document.getElementById('database-selector');
+            selector.innerHTML = '<option value="">选择数据库...</option>';
+            
+            if (schema.databases && schema.databases.length > 0) {
+                schema.databases.forEach(dbName => {
+                    const option = document.createElement('option');
+                    option.value = dbName;
+                    option.textContent = dbName;
+                    selector.appendChild(option);
+                });
+            } else {
+                const option = document.createElement('option');
+                option.value = 'default';
+                option.textContent = '默认数据库';
+                selector.appendChild(option);
+            }
+        }
+
+        // 刷新数据库架构
+        function refreshDatabaseSchema() {
+            if (currentDataSource) {
+                loadDatabaseSchema(currentDataSource);
+                showNotification('正在刷新数据库结构...', 'info');
+            } else {
+                showNotification('请先选择一个服务', 'warning');
+            }
+        }
+
+        // 更新状态
+        function updateStatus(text, type = 'info') {
+            document.getElementById('status-text').textContent = text;
+            const indicator = document.getElementById('status-indicator');
+            
+            const colors = {
+                'success': '#28a745',
+                'warning': '#ffc107',
+                'error': '#dc3545',
+                'info': '#17a2b8'
+            };
+            
+            indicator.style.color = colors[type] || colors.info;
+        }
+
+        // 保存服务
+        async function saveCurrentService() {
+            const formData = gatherFormData();
+            
+            if (!validateForm(formData)) {
+                return;
+            }
+
+            try {
+                updateStatus('保存中...', 'warning');
+                const saveBtn = document.getElementById('save-btn');
+                const originalText = saveBtn.innerHTML;
+                saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 保存中';
+                saveBtn.disabled = true;
+
+                let response;
+                if (isEditMode && currentServiceId) {
+                    response = await fetch(`${API_BASE_URL}/api/services/${currentServiceId}`, {
+                        method: 'PUT',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(formData)
+                    });
+                } else {
+                    response = await fetch(`${API_BASE_URL}/api/services`, {
+                        method: 'POST',
+                        headers: {
+                            'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(formData)
+                    });
+                }
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus('保存成功', 'success');
+                    document.getElementById('last-saved').textContent = new Date().toLocaleTimeString();
+                    
+                    if (!isEditMode) {
+                        // 新建模式，切换到编辑模式
+                        isEditMode = true;
+                        currentServiceId = result.data.id;
+                        currentService = result.data;
+                    } else {
+                        // 更新当前服务数据
+                        currentService = { ...currentService, ...result.data };
+                        
+                        // 更新本地服务列表中的对应项
+                        const serviceIndex = services.findIndex(s => s.id === currentServiceId);
+                        if (serviceIndex !== -1) {
+                            services[serviceIndex] = currentService;
+                            rebuildServiceTree(); // 重新渲染服务列表
+                        }
+                    }
+                    
+                    showNotification('保存成功！', 'success');
+                } else {
+                    updateStatus('保存失败', 'error');
+                    showNotification('保存失败: ' + result.message, 'error');
+                }
+            } catch (error) {
+                updateStatus('保存失败', 'error');
+                showNotification('保存失败: ' + error.message, 'error');
+            } finally {
+                const saveBtn = document.getElementById('save-btn');
+                saveBtn.innerHTML = '<i class="fas fa-save"></i> 保存';
+                saveBtn.disabled = false;
+            }
+        }
+
+        // 收集表单数据
+        function gatherFormData() {
+            if (!currentService) {
+                showNotification('请先选择一个服务', 'error');
+                return null;
+            }
+
+            // 自动保存参数配置
+            const inputParams = collectParameters('input-params');
+            const outputParams = collectParameters('output-params');
+
+            return {
+                ...currentService,
+                sqlContent: sqlEditor ? sqlEditor.getValue() : '',
+                requestParams: Object.keys(inputParams).length > 0 ? JSON.stringify(inputParams, null, 2) : '{}',
+                responseExample: Object.keys(outputParams).length > 0 ? JSON.stringify(outputParams, null, 2) : '{}',
+                enabled: true
+            };
+        }
+
+        // 验证表单
+        function validateForm(formData) {
+            if (!formData) {
+                return false;
+            }
+            
+            if (!formData.sqlContent) {
+                showNotification('请输入SQL查询', 'error');
+                return false;
+            }
+            
+            return true;
+        }
+
+        // 测试服务
+        function testCurrentService() {
+            if (!currentService) {
+                showNotification('请先选择一个服务', 'warning');
+                return;
+            }
+
+            const formData = gatherFormData();
+            if (!formData || !formData.sqlContent) {
+                showNotification('请输入SQL查询', 'warning');
+                return;
+            }
+            
+            updateStatus('测试功能开发中...', 'info');
+            showNotification('测试功能正在开发中', 'info');
+        }
+
+        // 发布服务
+        async function publishCurrentService() {
+            if (!currentService || !currentServiceId) {
+                showNotification('请先选择并保存服务', 'warning');
+                return;
+            }
+            
+            try {
+                updateStatus('发布中...', 'warning');
+                const response = await fetch(`${API_BASE_URL}/api/services/${currentServiceId}/status?status=PUBLISHED`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    updateStatus('发布成功', 'success');
+                    showNotification('服务发布成功！', 'success');
+                    
+                    // 更新当前服务状态
+                    if (currentService) {
+                        currentService.status = 'PUBLISHED';
+                        updateServiceInfo(currentService);
+                        
+                        // 更新本地服务列表中的状态
+                        const serviceIndex = services.findIndex(s => s.id === currentServiceId);
+                        if (serviceIndex !== -1) {
+                            services[serviceIndex].status = 'PUBLISHED';
+                            rebuildServiceTree();
+                        }
+                    }
+                } else {
+                    updateStatus('发布失败', 'error');
+                    showNotification('发布失败: ' + result.message, 'error');
+                }
+            } catch (error) {
+                updateStatus('发布失败', 'error');
+                showNotification('发布失败: ' + error.message, 'error');
+            }
+        }
+
+        // 新建服务弹窗
+        function showCreateServiceModal() {
+            console.log('打开新建服务弹窗');
+            console.log('数据源加载状态:', datasourcesLoaded);
+            console.log('数据源数量:', datasources ? datasources.length : 0);
+            
+            // 如果数据源尚未加载，尝试重新加载
+            if (!datasourcesLoaded || !datasources || datasources.length === 0) {
+                console.log('数据源未加载，尝试重新加载...');
+                loadDataSources().then(() => {
+                    console.log('重新加载数据源完成');
+                });
+            }
+            
+            const modal = document.getElementById('create-service-modal');
+            modal.classList.add('show');
+        }
+
+        function hideCreateServiceModal() {
+            const modal = document.getElementById('create-service-modal');
+            modal.classList.remove('show');
+            clearModalForm();
+        }
+
+        function clearModalForm() {
+            document.getElementById('create-service-form').reset();
+            document.getElementById('name-error').style.display = 'none';
+            document.getElementById('path-error').style.display = 'none';
+        }
+
+        // 数据源类型变更时筛选数据源
+        function filterDatasourcesByType() {
+            console.log('filterDatasourcesByType 被调用');
+            const typeSelect = document.getElementById('new-datasource-type');
+            const datasourceSelect = document.getElementById('new-service-datasource');
+            
+            if (!typeSelect || !datasourceSelect) {
+                console.error('❌ 数据源选择框元素未找到');
+                return;
+            }
+            
+            const selectedType = typeSelect.value;
+            console.log('选择的数据源类型:', selectedType);
+            console.log('数据源加载状态:', datasourcesLoaded);
+            console.log('当前全局数据源数量:', datasources ? datasources.length : 0);
+            
+            if (!datasourcesLoaded) {
+                console.warn('⚠️ 数据源尚未加载完成，请稍后再试');
+                datasourceSelect.innerHTML = '<option value="">数据源加载中...</option>';
+                return;
+            }
+            
+            datasourceSelect.innerHTML = '<option value="">请选择数据源</option>';
+            
+            if (!selectedType) {
+                datasourceSelect.innerHTML = '<option value="">请先选择数据源类型</option>';
+                console.log('未选择数据源类型，已重置选择框');
+                return;
+            }
+            
+            if (!datasources || datasources.length === 0) {
+                console.error('❌ 全局数据源数组为空或未定义');
+                datasourceSelect.innerHTML = '<option value="">暂无可用数据源</option>';
+                return;
+            }
+            
+            console.log('开始筛选数据源...');
+            const filteredDatasources = datasources.filter(ds => {
+                console.log(`  检查: ${ds.name} (类型: "${ds.type}") 是否匹配 "${selectedType}"`);
+                return ds.type === selectedType;
+            });
+            console.log('筛选到的数据源:', filteredDatasources.length, '个');
+            
+            if (filteredDatasources.length === 0) {
+                console.log('该类型没有匹配的数据源');
+                datasourceSelect.innerHTML = '<option value="">该类型暂无可用数据源</option>';
+                return;
+            }
+            
+            console.log('开始填充数据源选项:');
+            filteredDatasources.forEach(ds => {
+                console.log(`  添加选项: ${ds.name} (ID: ${ds.id}) @ ${ds.host}:${ds.port}`);
+                const option = document.createElement('option');
+                option.value = ds.id;
+                option.textContent = `${ds.name} (${ds.host}:${ds.port})`;
+                datasourceSelect.appendChild(option);
+            });
+            console.log('✅ 数据源选项填充完成，总计:', datasourceSelect.options.length - 1, '个选项');
+        }
+
+        // 校验服务名称是否重复
+        async function validateServiceName(name, excludeId = null) {
+            try {
+                const params = new URLSearchParams({ name: name });
+                const response = await fetch(`${API_BASE_URL}/api/services?${params}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    const existingServices = result.data.content || result.data || [];
+                    return excludeId ? 
+                        existingServices.some(s => s.name === name && s.id !== excludeId) : 
+                        existingServices.some(s => s.name === name);
+                }
+                return false;
+            } catch (error) {
+                console.error('校验服务名称失败:', error);
+                return false;
+            }
+        }
+
+        // 校验API路径和方法组合是否重复
+        async function validateServicePath(method, path, excludeId = null) {
+            try {
+                const params = new URLSearchParams({ method: method, path: path });
+                const response = await fetch(`${API_BASE_URL}/api/services?${params}`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    const existingServices = result.data.content || result.data || [];
+                    return excludeId ? 
+                        existingServices.some(s => s.method === method && s.path === path && s.id !== excludeId) : 
+                        existingServices.some(s => s.method === method && s.path === path);
+                }
+                return false;
+            } catch (error) {
+                console.error('校验API路径失败:', error);
+                return false;
+            }
+        }
+
+        // 显示字段错误信息
+        function showFieldError(fieldId, message) {
+            const errorElement = document.getElementById(fieldId);
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+
+        function hideFieldError(fieldId) {
+            const errorElement = document.getElementById(fieldId);
+            errorElement.style.display = 'none';
+        }
+
+        // 创建服务
+        async function createService() {
+            const form = document.getElementById('create-service-form');
+            const formData = new FormData(form);
+            
+            const serviceData = {
+                name: formData.get('name').trim(),
+                method: formData.get('method'),
+                path: formData.get('path').trim(),
+                dataSourceId: parseInt(formData.get('dataSourceId')),
+                description: formData.get('description').trim()
+            };
+
+            // 清除之前的错误信息
+            hideFieldError('name-error');
+            hideFieldError('path-error');
+
+            // 基础验证
+            if (!serviceData.name) {
+                showFieldError('name-error', '请输入服务名称');
+                return;
+            }
+            
+            if (!serviceData.path) {
+                showFieldError('path-error', '请输入API路径');
+                return;
+            }
+            
+            if (!serviceData.path.startsWith('/')) {
+                showFieldError('path-error', 'API路径必须以/开头');
+                return;
+            }
+            
+            if (!serviceData.dataSourceId) {
+                showNotification('请选择数据源', 'error');
+                return;
+            }
+
+            // 禁用创建按钮，显示加载状态
+            const createBtn = document.getElementById('create-service-btn');
+            const originalText = createBtn.innerHTML;
+            createBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> 创建中...';
+            createBtn.disabled = true;
+
+            try {
+                // 执行重复校验
+                const [nameExists, pathExists] = await Promise.all([
+                    validateServiceName(serviceData.name),
+                    validateServicePath(serviceData.method, serviceData.path)
+                ]);
+
+                if (nameExists) {
+                    showFieldError('name-error', '服务名称已存在，请使用其他名称');
+                    return;
+                }
+
+                if (pathExists) {
+                    showFieldError('path-error', `${serviceData.method} ${serviceData.path} 已存在，请使用其他路径或方法`);
+                    return;
+                }
+
+                // 创建服务
+                const response = await fetch(`${API_BASE_URL}/api/services`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        ...serviceData,
+                        sqlContent: 'SELECT * FROM your_table WHERE condition = :param',
+                        enabled: true
+                    })
+                });
+
+                const result = await response.json();
+                if (result.success) {
+                    hideCreateServiceModal();
+                    
+                    // 立即添加新服务到本地列表
+                    const newService = result.data;
+                    if (newService) {
+                        services.push(newService);
+                        rebuildServiceTree();
+                        
+                        // 自动选择新创建的服务
+                        setTimeout(() => {
+                            loadService(newService.id);
+                        }, 100);
+                    } else {
+                        // 如果没有返回数据，重新加载服务列表
+                        loadServices();
+                    }
+                    
+                    showNotification('服务创建成功！', 'success');
+                } else {
+                    showNotification('创建失败：' + result.message, 'error');
+                }
+            } catch (error) {
+                showNotification('创建失败：' + error.message, 'error');
+            } finally {
+                // 恢复按钮状态
+                createBtn.innerHTML = originalText;
+                createBtn.disabled = false;
+            }
+        }
+
+        // 参数配置面板
+        function showParameterPanel() {
+            const panel = document.getElementById('parameter-panel');
+            panel.classList.add('show');
+        }
+
+        function hideParameterPanel() {
+            const panel = document.getElementById('parameter-panel');
+            panel.classList.remove('show');
+        }
+
+        // 添加输入参数
+        function addInputParameter() {
+            const paramList = document.getElementById('input-params');
+            const paramItem = createParameterItem('input');
+            paramList.appendChild(paramItem);
+            updateParameterCount();
+        }
+
+        // 添加输出参数
+        function addOutputParameter() {
+            const paramList = document.getElementById('output-params');
+            const paramItem = createParameterItem('output');
+            paramList.appendChild(paramItem);
+            updateParameterCount();
+        }
+
+        // 创建参数项
+        function createParameterItem(type) {
+            const paramId = `${type}-param-${Date.now()}`;
+            const paramItem = document.createElement('div');
+            paramItem.className = 'param-item';
+            paramItem.innerHTML = `
+                <div class="param-item-header" onclick="toggleParameterItem('${paramId}')">
+                    <div class="param-item-title">
+                        <i class="fas fa-chevron-down param-collapse-icon"></i>
+                        <i class="fas fa-${type === 'input' ? 'sign-in-alt' : 'sign-out-alt'}" style="color: ${type === 'input' ? '#28a745' : '#1890ff'}; margin-right: 4px;"></i>
+                        <span class="param-name-display">新建参数</span>
+                    </div>
+                    <div class="param-item-actions">
+                        <button class="param-item-action" onclick="deleteParameter('${paramId}'); event.stopPropagation();" title="删除参数">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="param-content">
+                    <div class="param-form-grid">
+                        <div class="form-group">
+                            <label>名称 <span style="color: #ff4d4f;">*</span></label>
+                            <input type="text" class="param-item-name" placeholder="参数名称" onchange="updateParameterTitle('${paramId}')" />
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>类型</label>
+                            <select class="param-type-select" onchange="toggleNestedConfig('${paramId}'); updateParameterTitle('${paramId}')">
+                                <option value="string">String</option>
+                                <option value="number">Number</option>
+                                <option value="boolean">Boolean</option>
+                                <option value="date">Date</option>
+                                <option value="object">Object</option>
+                                <option value="array">Array</option>
+                                <option value="object_array">Object[]</option>
+                            </select>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>描述</label>
+                            <input type="text" placeholder="参数描述" class="param-description" />
+                        </div>
+                    </div>
+                    
+                    <div class="nested-config" id="nested-${paramId}" style="display: none; padding: 8px; background: #f8f9fa; border-radius: 4px; margin-top: 8px;">
+                        <div class="nested-params"></div>
+                        <button type="button" class="btn btn-sm btn-secondary" onclick="addNestedParameter('${paramId}')">
+                            <i class="fas fa-plus"></i> 添加子参数
+                        </button>
+                    </div>
+                </div>
+            `;
+            paramItem.id = paramId;
+            return paramItem;
+        }
+
+        // 切换嵌套配置显示
+        function toggleNestedConfig(paramId) {
+            const typeSelect = document.querySelector(`#${paramId} .param-type-select`);
+            const nestedConfig = document.getElementById(`nested-${paramId}`);
+            const type = typeSelect.value;
+            
+            if (type === 'object' || type === 'array' || type === 'object_array') {
+                nestedConfig.style.display = 'block';
+            } else {
+                nestedConfig.style.display = 'none';
+            }
+        }
+
+        // 添加嵌套参数
+        function addNestedParameter(parentId) {
+            const nestedParamsContainer = document.querySelector(`#${parentId} .nested-params`);
+            const nestedParam = createNestedParameter(parentId);
+            nestedParamsContainer.appendChild(nestedParam);
+        }
+
+        // 创建嵌套参数项
+        function createNestedParameter(parentId) {
+            const nestedId = `nested-${parentId}-${Date.now()}`;
+            const nestedParam = document.createElement('div');
+            nestedParam.className = 'nested-param-item';
+            nestedParam.innerHTML = `
+                <div style="display: grid; grid-template-columns: 1fr 120px 1fr auto; gap: 8px; align-items: center; padding: 8px;">
+                    <input type="text" placeholder="参数名" class="nested-param-name" />
+                    <select class="nested-param-type">
+                        <option value="string">字符串</option>
+                        <option value="number">数字</option>
+                        <option value="boolean">布尔值</option>
+                        <option value="date">日期</option>
+                    </select>
+                    <input type="text" placeholder="描述" class="nested-param-description" />
+                    <button type="button" class="param-item-action" onclick="deleteNestedParameter('${nestedId}')" title="删除参数">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
+            `;
+            nestedParam.id = nestedId;
+            return nestedParam;
+        }
+
+        // 删除参数
+        function deleteParameter(paramId) {
+            if (confirm('确定要删除此参数吗？')) {
+                document.getElementById(paramId).remove();
+                updateParameterCount();
+            }
+        }
+
+        // 切换参数项展开/折叠
+        function toggleParameterItem(paramId) {
+            const paramItem = document.getElementById(paramId);
+            if (paramItem) {
+                paramItem.classList.toggle('collapsed');
+                
+                const content = paramItem.querySelector('.param-content');
+                if (content) {
+                    if (paramItem.classList.contains('collapsed')) {
+                        content.style.maxHeight = '0';
+                    } else {
+                        content.style.maxHeight = content.scrollHeight + 'px';
+                    }
+                }
+            }
+        }
+
+        // 切换参数分组展开/折叠
+        function toggleParamSection(sectionId) {
+            const section = document.getElementById(sectionId);
+            if (section) {
+                section.classList.toggle('collapsed');
+                
+                const content = section.querySelector('.param-section-content');
+                if (content) {
+                    if (section.classList.contains('collapsed')) {
+                        content.style.maxHeight = '0';
+                    } else {
+                        content.style.maxHeight = content.scrollHeight + 'px';
+                    }
+                }
+            }
+        }
+
+        // 更新参数项标题显示
+        function updateParameterTitle(paramId) {
+            const paramItem = document.getElementById(paramId);
+            if (!paramItem) return;
+            
+            const nameInput = paramItem.querySelector('.param-item-name');
+            const typeSelect = paramItem.querySelector('.param-type-select');
+            const titleDisplay = paramItem.querySelector('.param-name-display');
+            
+            if (nameInput && typeSelect && titleDisplay) {
+                const name = nameInput.value || '新建参数';
+                const type = typeSelect.value || 'string';
+                titleDisplay.textContent = `${name} (${type})`;
+            }
+        }
+
+        // 更新参数数量显示
+        function updateParameterCount() {
+            // 更新输入参数数量
+            const inputParams = document.getElementById('input-params').querySelectorAll('.param-item');
+            const inputCount = document.getElementById('input-param-count');
+            if (inputCount) {
+                inputCount.textContent = `(${inputParams.length})`;
+            }
+            
+            // 更新输出参数数量
+            const outputParams = document.getElementById('output-params').querySelectorAll('.param-item');
+            const outputCount = document.getElementById('output-param-count');
+            if (outputCount) {
+                outputCount.textContent = `(${outputParams.length})`;
+            }
+        }
+
+        // 删除嵌套参数
+        function deleteNestedParameter(nestedId) {
+            document.getElementById(nestedId).remove();
+        }
+
+        // 编辑参数 (预留功能)
+        function editParameter(paramId) {
+            // TODO: 实现参数编辑功能
+            console.log('编辑参数:', paramId);
+        }
+
+        // 保存参数配置到服务数据
+        function saveParameterConfig() {
+            if (!currentService) return;
+
+            const inputParams = collectParameters('input-params');
+            const outputParams = collectParameters('output-params');
+
+            // 更新当前服务的参数配置
+            currentService.requestParams = JSON.stringify(inputParams, null, 2);
+            currentService.responseExample = JSON.stringify(outputParams, null, 2);
+
+            showNotification('参数配置已更新', 'success');
+        }
+
+        // 收集参数配置
+        function collectParameters(containerId) {
+            const container = document.getElementById(containerId);
+            const paramItems = container.querySelectorAll('.param-item');
+            const params = {};
+
+            paramItems.forEach(item => {
+                const nameInput = item.querySelector('.param-item-name');
+                const typeSelect = item.querySelector('.param-type-select');
+                const descInput = item.querySelector('.param-description');
+                
+                if (!nameInput.value) return;
+
+                const paramName = nameInput.value;
+                const paramType = typeSelect.value;
+                const paramDesc = descInput.value;
+
+                params[paramName] = {
+                    type: paramType,
+                    description: paramDesc
+                };
+
+                // 处理嵌套参数
+                const nestedConfig = item.querySelector('.nested-config');
+                if (nestedConfig && nestedConfig.style.display !== 'none') {
+                    const nestedItems = nestedConfig.querySelectorAll('.nested-param-item');
+                    const nestedParams = {};
+
+                    nestedItems.forEach(nestedItem => {
+                        const nestedNameInput = nestedItem.querySelector('.nested-param-name');
+                        const nestedTypeSelect = nestedItem.querySelector('.nested-param-type');
+                        const nestedDescInput = nestedItem.querySelector('.nested-param-description');
+
+                        if (!nestedNameInput.value) return;
+
+                        nestedParams[nestedNameInput.value] = {
+                            type: nestedTypeSelect.value,
+                            description: nestedDescInput.value
+                        };
+                    });
+
+                    if (Object.keys(nestedParams).length > 0) {
+                        if (paramType === 'object') {
+                            params[paramName].properties = nestedParams;
+                        } else if (paramType === 'array' || paramType === 'object_array') {
+                            params[paramName].items = nestedParams;
+                        }
+                    }
+                }
+            });
+
+            return params;
+        }
+
+        // 从服务数据加载参数配置
+        function loadParameterConfig(service) {
+            if (!service) return;
+
+            // 清空现有参数
+            document.getElementById('input-params').innerHTML = '';
+            document.getElementById('output-params').innerHTML = '';
+
+            // 加载输入参数
+            if (service.requestParams) {
+                try {
+                    const inputParams = typeof service.requestParams === 'string' 
+                        ? JSON.parse(service.requestParams) 
+                        : service.requestParams;
+                    renderParameters('input-params', inputParams);
+                } catch (e) {
+                    console.error('解析输入参数失败:', e);
+                }
+            }
+
+            // 加载输出参数
+            if (service.responseExample) {
+                try {
+                    const outputParams = typeof service.responseExample === 'string' 
+                        ? JSON.parse(service.responseExample) 
+                        : service.responseExample;
+                    renderParameters('output-params', outputParams);
+                } catch (e) {
+                    console.error('解析输出参数失败:', e);
+                }
+            }
+            
+            // 加载完成后更新计数
+            setTimeout(() => {
+                updateParameterCount();
+            }, 100);
+        }
+
+        // 辅助函数
+        function getMethodClass(method) {
+            const classes = {
+                'GET': 'get',
+                'POST': 'post', 
+                'PUT': 'put',
+                'DELETE': 'delete'
+            };
+            return classes[method] || 'get';
+        }
+        
+        function getDatabaseIcon(type) {
+            const icons = {
+                'H2': 'fas fa-database',
+                'MYSQL': 'fab fa-mysql',
+                'POSTGRESQL': 'fas fa-elephant',
+                'ORACLE': 'fas fa-building',
+                'MONGODB': 'fab fa-leaf',
+                'ELASTICSEARCH': 'fas fa-search',
+                'CLICKHOUSE': 'fas fa-chart-bar'
+            };
+            return icons[type] || 'fas fa-database';
+        }
+        
+        function getStatusClass(status, type) {
+            if (type === 'service') {
+                const classes = {
+                    'DRAFT': 'status-draft',
+                    'PUBLISHED': 'status-published',
+                    'DISABLED': 'status-disabled'
+                };
+                return classes[status] || 'status-draft';
+            }
+            return '';
+        }
+        
+        function getStatusText(status, type) {
+            if (type === 'service') {
+                const texts = {
+                    'DRAFT': '草稿',
+                    'PUBLISHED': '已发布',
+                    'DISABLED': '已禁用'
+                };
+                return texts[status] || '草稿';
+            }
+            return status;
+        }
+        
+        function showNotification(message, type = 'info') {
+            // 创建通知元素
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'}"></i>
+                <span>${message}</span>
+            `;
+            
+            // 添加到页面
+            document.body.appendChild(notification);
+            
+            // 显示动画
+            setTimeout(() => notification.classList.add('show'), 100);
+            
+            // 3秒后自动移除
+            setTimeout(() => {
+                notification.classList.remove('show');
+                setTimeout(() => {
+                    if (notification.parentNode) {
+                        notification.parentNode.removeChild(notification);
+                    }
+                }, 300);
+            }, 3000);
+        }
+
+        // 渲染参数配置
+        function renderParameters(containerId, params) {
+            const container = document.getElementById(containerId);
+            const paramType = containerId === 'input-params' ? 'input' : 'output';
+
+            Object.keys(params).forEach(paramName => {
+                const param = params[paramName];
+                const paramItem = createParameterItem(paramType);
+                
+                // 填充参数基本信息
+                const nameInput = paramItem.querySelector('.param-item-name');
+                const typeSelect = paramItem.querySelector('.param-type-select');
+                const descInput = paramItem.querySelector('.param-description');
+                
+                nameInput.value = paramName;
+                typeSelect.value = param.type || 'string';
+                descInput.value = param.description || '';
+
+                // 如果有嵌套参数，显示并填充
+                if (param.properties || param.items) {
+                    const nestedConfig = paramItem.querySelector('.nested-config');
+                    nestedConfig.style.display = 'block';
+                    
+                    const nestedParamsContainer = paramItem.querySelector('.nested-params');
+                    const nestedData = param.properties || param.items;
+                    
+                    Object.keys(nestedData).forEach(nestedName => {
+                        const nestedParam = nestedData[nestedName];
+                        const nestedItem = createNestedParameter(paramItem.id);
+                        
+                        const nestedNameInput = nestedItem.querySelector('.nested-param-name');
+                        const nestedTypeSelect = nestedItem.querySelector('.nested-param-type');
+                        const nestedDescInput = nestedItem.querySelector('.nested-param-description');
+                        
+                        nestedNameInput.value = nestedName;
+                        nestedTypeSelect.value = nestedParam.type || 'string';
+                        nestedDescInput.value = nestedParam.description || '';
+                        
+                        nestedParamsContainer.appendChild(nestedItem);
+                    });
+                }
+
+                container.appendChild(paramItem);
+            });
+            
+            updateParameterCount();
+        }
+    </script>
+</body>
+</html>

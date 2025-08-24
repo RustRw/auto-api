@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>测试服务开发页面</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { padding: 8px 16px; margin: 5px; cursor: pointer; }
+        #results { background: #f5f5f5; padding: 10px; border-radius: 5px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>服务开发页面测试工具</h1>
+    
+    <div class="test-section">
+        <h3>测试步骤</h3>
+        <ol>
+            <li>确保应用程序运行在 http://localhost:8080</li>
+            <li>点击下面的链接打开服务开发页面</li>
+            <li>登录账号：admin / admin123</li>
+            <li>创建新服务或选择现有服务</li>
+            <li>检查编辑器是否正常显示</li>
+            <li>检查参数配置面板是否正常</li>
+        </ol>
+    </div>
+    
+    <div class="test-section">
+        <h3>相关页面链接</h3>
+        <a href="http://localhost:8080/web-frontend/login.html" target="_blank">
+            <button>🚪 登录页面</button>
+        </a>
+        <a href="http://localhost:8080/web-frontend/dashboard.html" target="_blank">
+            <button>📊 仪表盘</button>
+        </a>
+        <a href="http://localhost:8080/web-frontend/service-development.html" target="_blank">
+            <button>⚡ 服务开发页面 (主要测试)</button>
+        </a>
+        <a href="http://localhost:8080/web-frontend/apiservice-table.html" target="_blank">
+            <button>📋 API服务列表</button>
+        </a>
+    </div>
+    
+    <div class="test-section">
+        <h3>测试API端点</h3>
+        <button onclick="testLogin()">🔑 测试登录API</button>
+        <button onclick="testDataSources()">💾 测试数据源API</button>
+        <button onclick="testServices()">⚙️ 测试服务API</button>
+        <button onclick="createTestService()">➕ 创建测试服务</button>
+    </div>
+    
+    <div id="results"></div>
+    
+    <script>
+        const API_BASE_URL = 'http://localhost:8080';
+        let authToken = null;
+        
+        function log(message) {
+            const results = document.getElementById('results');
+            results.innerHTML += `[${new Date().toLocaleTimeString()}] ${message}<br>`;
+            results.scrollTop = results.scrollHeight;
+            console.log(message);
+        }
+        
+        async function makeRequest(url, options = {}) {
+            try {
+                const response = await fetch(url, options);
+                const data = await response.json();
+                return { status: response.status, data };
+            } catch (error) {
+                return { status: 0, error: error.message };
+            }
+        }
+        
+        async function testLogin() {
+            log('🔑 测试登录...');
+            const result = await makeRequest(`${API_BASE_URL}/api/auth/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ username: 'admin', password: 'admin123' })
+            });
+            
+            if (result.data && result.data.success) {
+                authToken = result.data.data.token;
+                log('✅ 登录成功，Token已获取');
+            } else {
+                log('❌ 登录失败: ' + (result.data?.message || result.error));
+            }
+        }
+        
+        async function testDataSources() {
+            if (!authToken) {
+                log('⚠️ 请先登录');
+                return;
+            }
+            
+            log('💾 测试数据源API...');
+            const result = await makeRequest(`${API_BASE_URL}/api/datasources`, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (result.data && result.data.success) {
+                log(`✅ 数据源API正常，共${result.data.data.length}个数据源`);
+                result.data.data.forEach(ds => {
+                    log(`   - ${ds.name}: ${ds.type}`);
+                });
+            } else {
+                log('❌ 数据源API失败: ' + (result.data?.message || result.error));
+            }
+        }
+        
+        async function testServices() {
+            if (!authToken) {
+                log('⚠️ 请先登录');
+                return;
+            }
+            
+            log('⚙️ 测试服务API...');
+            const result = await makeRequest(`${API_BASE_URL}/api/services`, {
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            
+            if (result.data && result.data.success) {
+                const services = result.data.data.content || result.data.data || [];
+                log(`✅ 服务API正常，共${services.length}个服务`);
+                services.forEach(svc => {
+                    log(`   - ${svc.name}: ${svc.method} ${svc.path}`);
+                });
+            } else {
+                log('❌ 服务API失败: ' + (result.data?.message || result.error));
+            }
+        }
+        
+        async function createTestService() {
+            if (!authToken) {
+                await testLogin();
+                if (!authToken) return;
+            }
+            
+            log('➕ 创建测试服务...');
+            const serviceData = {
+                name: '测试服务_' + Date.now(),
+                description: '通过测试工具创建的服务',
+                path: '/api/test_' + Date.now(),
+                method: 'GET',
+                dataSourceId: 1,
+                sqlContent: 'SELECT COUNT(*) as total FROM users',
+                requestParams: '{}',
+                responseExample: '{}',
+                enabled: true
+            };
+            
+            const result = await makeRequest(`${API_BASE_URL}/api/services`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(serviceData)
+            });
+            
+            if (result.data && result.data.success) {
+                const newService = result.data.data;
+                log(`✅ 服务创建成功: ${newService.name} (ID: ${newService.id})`);
+                log(`   现在可以在服务开发页面选择此服务进行编辑`);
+            } else {
+                log('❌ 服务创建失败: ' + (result.data?.message || result.error));
+            }
+        }
+        
+        // 页面加载时自动测试登录
+        window.onload = function() {
+            log('🚀 测试工具已加载');
+            testLogin();
+        };
+    </script>
+</body>
+</html>

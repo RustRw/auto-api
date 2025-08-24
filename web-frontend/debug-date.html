@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>调试日期问题</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+        }
+        .debug-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .btn {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>数据源日期调试</h1>
+        
+        <button class="btn" onclick="debugDatasources()">调试数据源日期</button>
+        <button class="btn" onclick="debugServices()">调试API服务日期</button>
+        
+        <div class="debug-section">
+            <h3>API响应数据</h3>
+            <pre id="api-response">点击按钮查看API响应...</pre>
+        </div>
+        
+        <div class="debug-section">
+            <h3>日期解析测试</h3>
+            <pre id="date-test">等待测试...</pre>
+        </div>
+        
+        <div class="debug-section">
+            <h3>格式化结果</h3>
+            <pre id="format-result">等待结果...</pre>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8080';
+
+        // 增强版日期格式化函数
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            try {
+                console.log('原始日期字符串:', dateString, '类型:', typeof dateString);
+                
+                // 处理LocalDateTime格式 (2023-12-25T10:30:45 或 2023-12-25T10:30:45.123)
+                let date = new Date(dateString);
+                console.log('直接解析结果:', date, '有效:', !isNaN(date.getTime()));
+                
+                // 如果日期无效，尝试其他格式
+                if (isNaN(date.getTime())) {
+                    // 尝试添加时区信息
+                    date = new Date(dateString + 'Z');
+                    console.log('添加Z后解析结果:', date, '有效:', !isNaN(date.getTime()));
+                }
+                
+                // 如果仍然无效，尝试替换T为空格
+                if (isNaN(date.getTime())) {
+                    date = new Date(dateString.replace('T', ' '));
+                    console.log('替换T后解析结果:', date, '有效:', !isNaN(date.getTime()));
+                }
+                
+                // 最终检查
+                if (isNaN(date.getTime())) {
+                    console.warn('无法解析日期:', dateString);
+                    return dateString; // 返回原始字符串
+                }
+                
+                const formatted = date.toLocaleDateString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit'
+                });
+                console.log('最终格式化结果:', formatted);
+                return formatted;
+            } catch (error) {
+                console.error('日期格式化错误:', error, dateString);
+                return 'ERROR: ' + error.message;
+            }
+        }
+
+        async function debugDatasources() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/datasources`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('API请求失败: ' + response.status);
+                }
+
+                const result = await response.json();
+                document.getElementById('api-response').textContent = JSON.stringify(result, null, 2);
+                
+                if (result.success && result.data && result.data.length > 0) {
+                    const firstDatasource = result.data[0];
+                    const createdAt = firstDatasource.createdAt;
+                    
+                    let testOutput = '=== 日期解析测试 ===\n';
+                    testOutput += `原始createdAt值: ${JSON.stringify(createdAt)}\n`;
+                    testOutput += `类型: ${typeof createdAt}\n`;
+                    testOutput += `是否为null/undefined: ${createdAt == null}\n`;
+                    
+                    if (createdAt) {
+                        testOutput += `\n=== 解析尝试 ===\n`;
+                        
+                        // 直接解析
+                        try {
+                            const date1 = new Date(createdAt);
+                            testOutput += `new Date("${createdAt}"): ${date1} (有效: ${!isNaN(date1.getTime())})\n`;
+                        } catch (e) {
+                            testOutput += `new Date("${createdAt}"): 错误 - ${e.message}\n`;
+                        }
+                        
+                        // 添加Z
+                        try {
+                            const date2 = new Date(createdAt + 'Z');
+                            testOutput += `new Date("${createdAt}Z"): ${date2} (有效: ${!isNaN(date2.getTime())})\n`;
+                        } catch (e) {
+                            testOutput += `new Date("${createdAt}Z"): 错误 - ${e.message}\n`;
+                        }
+                        
+                        // 替换T
+                        try {
+                            const date3 = new Date(createdAt.replace('T', ' '));
+                            testOutput += `new Date("${createdAt.replace('T', ' ')}"): ${date3} (有效: ${!isNaN(date3.getTime())})\n`;
+                        } catch (e) {
+                            testOutput += `new Date("${createdAt.replace('T', ' ')}"): 错误 - ${e.message}\n`;
+                        }
+                        
+                        const formatted = formatDate(createdAt);
+                        testOutput += `\n格式化结果: ${formatted}`;
+                        document.getElementById('format-result').textContent = `formatDate("${createdAt}") = "${formatted}"`;
+                    }
+                    
+                    document.getElementById('date-test').textContent = testOutput;
+                } else {
+                    document.getElementById('date-test').textContent = '没有数据源数据可供测试';
+                }
+                
+            } catch (error) {
+                document.getElementById('api-response').textContent = '错误: ' + error.message;
+                console.error('调试失败:', error);
+            }
+        }
+
+        async function debugServices() {
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/services`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('API请求失败: ' + response.status);
+                }
+
+                const result = await response.json();
+                document.getElementById('api-response').textContent = JSON.stringify(result, null, 2);
+                
+                if (result.success && result.data && result.data.content && result.data.content.length > 0) {
+                    const firstService = result.data.content[0];
+                    const createdAt = firstService.createdAt;
+                    
+                    let testOutput = '=== API服务日期解析测试 ===\n';
+                    testOutput += `原始createdAt值: ${JSON.stringify(createdAt)}\n`;
+                    testOutput += `类型: ${typeof createdAt}\n`;
+                    
+                    if (createdAt) {
+                        const formatted = formatDate(createdAt);
+                        testOutput += `格式化结果: ${formatted}`;
+                        document.getElementById('format-result').textContent = `formatDate("${createdAt}") = "${formatted}"`;
+                    }
+                    
+                    document.getElementById('date-test').textContent = testOutput;
+                } else {
+                    document.getElementById('date-test').textContent = '没有API服务数据可供测试';
+                }
+                
+            } catch (error) {
+                document.getElementById('api-response').textContent = '错误: ' + error.message;
+                console.error('调试失败:', error);
+            }
+        }
+    </script>
+</body>
+</html>

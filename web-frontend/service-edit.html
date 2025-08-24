@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>编辑API服务 - Auto API Platform</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: white;
+            text-decoration: none;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-links a {
+            color: white;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 5px;
+            transition: background-color 0.3s;
+        }
+
+        .nav-links a:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .container {
+            flex: 1;
+            padding: 2rem;
+            max-width: 1000px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .form-card {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .form-header {
+            margin-bottom: 2rem;
+            text-align: center;
+        }
+
+        .form-header h1 {
+            color: #333;
+            margin-bottom: 0.5rem;
+        }
+
+        .form-header p {
+            color: #666;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            background: #fff;
+        }
+
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+            font-family: 'Courier New', Consolas, monospace;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-row-3 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+        }
+
+        .btn {
+            padding: 0.75rem 2rem;
+            border: none;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f8f9fa;
+            color: #6c757d;
+            border: 2px solid #e9ecef;
+        }
+
+        .btn-secondary:hover {
+            background: #e9ecef;
+        }
+
+        .btn-test {
+            background: #28a745;
+            color: white;
+            margin-left: 1rem;
+        }
+
+        .btn-test:hover {
+            background: #218838;
+        }
+
+        .btn-publish {
+            background: #17a2b8;
+            color: white;
+            margin-left: 1rem;
+        }
+
+        .btn-publish:hover {
+            background: #138496;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 2rem;
+            padding-top: 2rem;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .alert {
+            padding: 0.75rem 1rem;
+            border-radius: 5px;
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .alert-success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 1rem;
+        }
+
+        .spinner {
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #667eea;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+            display: inline-block;
+            margin-right: 0.5rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.75rem;
+            border-radius: 50px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .status-draft {
+            background: #e9ecef;
+            color: #6c757d;
+        }
+
+        .status-published {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status-disabled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .sql-editor {
+            position: relative;
+        }
+
+        .sql-editor textarea {
+            font-family: 'Courier New', Consolas, monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            min-height: 200px;
+        }
+
+        @media (max-width: 768px) {
+            .form-row, .form-row-3 {
+                grid-template-columns: 1fr;
+            }
+            
+            .form-actions {
+                flex-direction: column;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <a href="dashboard.html" class="logo">Auto API Platform</a>
+        <nav class="nav-links">
+            <a href="dashboard.html">仪表板</a>
+            <a href="#" onclick="logout()">退出登录</a>
+        </nav>
+    </div>
+
+    <div class="container">
+        <div class="form-card">
+            <div class="form-header">
+                <h1 id="form-title">编辑API服务</h1>
+                <p>配置和管理API服务</p>
+            </div>
+
+            <div class="alert alert-success" id="success-alert">
+                操作成功完成！
+            </div>
+
+            <div class="alert alert-error" id="error-alert">
+                操作失败，请检查输入信息
+            </div>
+
+            <form id="service-form">
+                <input type="hidden" id="service-id" />
+                
+                <div class="form-group">
+                    <label for="name">API服务名称 *</label>
+                    <input type="text" id="name" name="name" required placeholder="请输入API服务名称">
+                </div>
+
+                <div class="form-group">
+                    <label for="description">描述</label>
+                    <textarea id="description" name="description" rows="3" placeholder="请输入API服务描述"></textarea>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="path">API路径 *</label>
+                        <input type="text" id="path" name="path" required placeholder="/api/example" pattern="^/.*">
+                    </div>
+                    <div class="form-group">
+                        <label for="method">HTTP方法 *</label>
+                        <select id="method" name="method" required>
+                            <option value="">请选择HTTP方法</option>
+                            <option value="GET">GET</option>
+                            <option value="POST">POST</option>
+                            <option value="PUT">PUT</option>
+                            <option value="DELETE">DELETE</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="dataSourceId">数据源 *</label>
+                    <select id="dataSourceId" name="dataSourceId" required>
+                        <option value="">请选择数据源</option>
+                    </select>
+                </div>
+
+                <div class="form-group sql-editor">
+                    <label for="sqlContent">SQL查询 *</label>
+                    <textarea id="sqlContent" name="sqlContent" required placeholder="SELECT * FROM table_name"></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="requestParams">请求参数配置 (JSON格式)</label>
+                    <textarea id="requestParams" name="requestParams" rows="4" placeholder='[{"name": "id", "type": "number", "required": true, "description": "用户ID"}]'></textarea>
+                </div>
+
+                <div class="form-group">
+                    <label for="responseExample">响应示例 (JSON格式)</label>
+                    <textarea id="responseExample" name="responseExample" rows="6" placeholder='{"id": 1, "name": "示例", "status": "active"}'></textarea>
+                </div>
+
+                <div class="form-row-3">
+                    <div class="form-group">
+                        <label for="status">状态 *</label>
+                        <select id="status" name="status" required>
+                            <option value="DRAFT">草稿</option>
+                            <option value="PUBLISHED">已发布</option>
+                            <option value="DISABLED">已禁用</option>
+                            <option value="ARCHIVED">已归档</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="cacheDuration">缓存时长(秒)</label>
+                        <input type="number" id="cacheDuration" name="cacheDuration" value="300" min="0" max="3600">
+                    </div>
+                    <div class="form-group">
+                        <label for="rateLimit">速率限制(次/分钟)</label>
+                        <input type="number" id="rateLimit" name="rateLimit" value="100" min="1" max="10000">
+                    </div>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="enabled" name="enabled" checked>
+                            <label for="enabled">启用此API服务</label>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="cacheEnabled" name="cacheEnabled">
+                            <label for="cacheEnabled">启用响应缓存</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    正在处理...
+                </div>
+
+                <div class="form-actions">
+                    <a href="dashboard.html" class="btn btn-secondary">返回</a>
+                    <div>
+                        <button type="button" class="btn btn-test" onclick="testService()">测试API</button>
+                        <button type="button" class="btn btn-publish" onclick="publishService()">发布服务</button>
+                        <button type="submit" class="btn btn-primary">保存服务</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // 全局变量
+        let isEditMode = false;
+        let serviceId = null;
+        let dataSources = [];
+
+        // 页面加载完成后执行
+        document.addEventListener('DOMContentLoaded', function() {
+            // 检查是否已登录
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'login.html';
+                return;
+            }
+
+            // 从URL参数获取ID
+            const urlParams = new URLSearchParams(window.location.search);
+            serviceId = urlParams.get('id');
+            
+            if (serviceId) {
+                isEditMode = true;
+                document.getElementById('form-title').textContent = '编辑API服务';
+                document.getElementById('service-id').value = serviceId;
+            } else {
+                document.getElementById('form-title').textContent = '新建API服务';
+            }
+
+            // 加载数据源列表
+            loadDataSources().then(() => {
+                if (isEditMode) {
+                    loadService(serviceId);
+                }
+            });
+
+            // 绑定表单提交事件
+            document.getElementById('service-form').addEventListener('submit', handleSubmit);
+        });
+
+        // 加载数据源列表
+        async function loadDataSources() {
+            try {
+                const response = await fetch('/api/datasources', {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('获取数据源列表失败');
+                }
+
+                const result = await response.json();
+                if (result.success) {
+                    dataSources = result.data;
+                    populateDataSources();
+                } else {
+                    throw new Error(result.message || '获取数据源列表失败');
+                }
+            } catch (error) {
+                showAlert('error', '加载数据源列表失败: ' + error.message);
+            }
+        }
+
+        // 填充数据源选项
+        function populateDataSources() {
+            const select = document.getElementById('dataSourceId');
+            select.innerHTML = '<option value="">请选择数据源</option>';
+            
+            dataSources.forEach(ds => {
+                const option = document.createElement('option');
+                option.value = ds.id;
+                option.textContent = `${ds.name} (${ds.type})`;
+                select.appendChild(option);
+            });
+        }
+
+        // 加载API服务信息
+        async function loadService(id) {
+            try {
+                showLoading(true);
+                
+                const response = await fetch(`/api/services/${id}`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('获取API服务信息失败');
+                }
+
+                const result = await response.json();
+                if (result.success) {
+                    populateForm(result.data);
+                } else {
+                    throw new Error(result.message || '获取API服务信息失败');
+                }
+            } catch (error) {
+                showAlert('error', '加载API服务信息失败: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // 填充表单数据
+        function populateForm(data) {
+            document.getElementById('name').value = data.name || '';
+            document.getElementById('description').value = data.description || '';
+            document.getElementById('path').value = data.path || '';
+            document.getElementById('method').value = data.method || '';
+            document.getElementById('dataSourceId').value = data.dataSourceId || '';
+            document.getElementById('sqlContent').value = data.sqlContent || '';
+            document.getElementById('requestParams').value = data.requestParams || '';
+            document.getElementById('responseExample').value = data.responseExample || '';
+            document.getElementById('status').value = data.status || 'DRAFT';
+            document.getElementById('cacheDuration').value = data.cacheDuration || 300;
+            document.getElementById('rateLimit').value = data.rateLimit || 100;
+            document.getElementById('enabled').checked = data.enabled !== false;
+            document.getElementById('cacheEnabled').checked = data.cacheEnabled === true;
+        }
+
+        // 处理表单提交
+        async function handleSubmit(e) {
+            e.preventDefault();
+            
+            try {
+                showLoading(true);
+                hideAlerts();
+
+                const formData = new FormData(e.target);
+                const data = {
+                    name: formData.get('name'),
+                    description: formData.get('description'),
+                    path: formData.get('path'),
+                    method: formData.get('method'),
+                    dataSourceId: parseInt(formData.get('dataSourceId')),
+                    sqlContent: formData.get('sqlContent'),
+                    requestParams: formData.get('requestParams'),
+                    responseExample: formData.get('responseExample'),
+                    status: formData.get('status'),
+                    cacheDuration: parseInt(formData.get('cacheDuration') || 300),
+                    rateLimit: parseInt(formData.get('rateLimit') || 100),
+                    enabled: document.getElementById('enabled').checked,
+                    cacheEnabled: document.getElementById('cacheEnabled').checked
+                };
+
+                // 验证JSON格式
+                if (data.requestParams) {
+                    try {
+                        JSON.parse(data.requestParams);
+                    } catch (e) {
+                        throw new Error('请求参数配置格式错误，请输入有效的JSON');
+                    }
+                }
+
+                if (data.responseExample) {
+                    try {
+                        JSON.parse(data.responseExample);
+                    } catch (e) {
+                        throw new Error('响应示例格式错误，请输入有效的JSON');
+                    }
+                }
+
+                const url = isEditMode ? `/api/services/${serviceId}` : '/api/services';
+                const method = isEditMode ? 'PUT' : 'POST';
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('success', `API服务${isEditMode ? '更新' : '创建'}成功！`);
+                    setTimeout(() => {
+                        window.location.href = 'dashboard.html';
+                    }, 1500);
+                } else {
+                    throw new Error(result.message || `${isEditMode ? '更新' : '创建'}API服务失败`);
+                }
+            } catch (error) {
+                showAlert('error', error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // 测试API服务
+        async function testService() {
+            if (!isEditMode || !serviceId) {
+                showAlert('error', '请先保存API服务后再测试');
+                return;
+            }
+
+            try {
+                showLoading(true);
+                hideAlerts();
+
+                const response = await fetch(`/api/services/${serviceId}/test`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('success', 'API测试成功！数据：' + JSON.stringify(result.data).substring(0, 100) + '...');
+                } else {
+                    throw new Error(result.message || 'API测试失败');
+                }
+            } catch (error) {
+                showAlert('error', 'API测试失败: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // 发布服务
+        async function publishService() {
+            if (!isEditMode || !serviceId) {
+                showAlert('error', '请先保存API服务后再发布');
+                return;
+            }
+
+            try {
+                showLoading(true);
+                hideAlerts();
+
+                const response = await fetch(`/api/services/${serviceId}/publish`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showAlert('success', 'API服务发布成功！');
+                    document.getElementById('status').value = 'PUBLISHED';
+                } else {
+                    throw new Error(result.message || 'API服务发布失败');
+                }
+            } catch (error) {
+                showAlert('error', 'API服务发布失败: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // 显示加载状态
+        function showLoading(show) {
+            const loading = document.getElementById('loading');
+            const submitButton = document.querySelector('button[type="submit"]');
+            loading.style.display = show ? 'block' : 'none';
+            submitButton.disabled = show;
+        }
+
+        // 显示提示信息
+        function showAlert(type, message) {
+            const alertElement = document.getElementById(type === 'success' ? 'success-alert' : 'error-alert');
+            alertElement.textContent = message;
+            alertElement.style.display = 'block';
+            
+            // 5秒后自动隐藏
+            setTimeout(() => {
+                alertElement.style.display = 'none';
+            }, 5000);
+        }
+
+        // 隐藏所有提示信息
+        function hideAlerts() {
+            document.getElementById('success-alert').style.display = 'none';
+            document.getElementById('error-alert').style.display = 'none';
+        }
+
+        // 退出登录
+        function logout() {
+            localStorage.removeItem('token');
+            localStorage.removeItem('user');
+            window.location.href = 'login.html';
+        }
+    </script>
+</body>
+</html>

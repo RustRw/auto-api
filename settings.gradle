@@ -1,0 +1,12 @@
+rootProject.name = 'auto-api'
+
+include 'common-core'
+include 'datasource-core' 
+include 'api-service-core'
+include 'web-gateway'
+
+// 配置子项目目录
+project(':common-core').projectDir = file('common-core')
+project(':datasource-core').projectDir = file('datasource-core')
+project(':api-service-core').projectDir = file('api-service-core')
+project(':web-gateway').projectDir = file('web-gateway')

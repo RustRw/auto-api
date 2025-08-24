@@ -1,0 +1,38 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:apitestdb;MODE=MySQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password: password
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+        format_sql: true
+  h2:
+    console:
+      enabled: true
+
+logging:
+  level:
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    org.duqiu.fly.autoapi: DEBUG
+    
+# 测试配置
+test:
+  datasource:
+    # 模拟MySQL数据源配置
+    host: localhost
+    port: 3306
+    database: testdb
+    username: testuser
+    password: testpass
+    # H2测试数据源配置
+    h2:
+      url: jdbc:h2:mem:datasource_test;MODE=MySQL;DATABASE_TO_LOWER=TRUE;CASE_INSENSITIVE_IDENTIFIERS=TRUE
+      username: sa
+      password: password

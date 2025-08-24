@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>创建数据源 - Auto API Platform</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: #f5f5f5;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 64px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .logo {
+            color: #1890ff;
+            font-size: 20px;
+            font-weight: bold;
+            text-decoration: none;
+        }
+
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #666;
+            font-size: 14px;
+        }
+
+        .breadcrumb a {
+            color: #1890ff;
+            text-decoration: none;
+        }
+
+        .breadcrumb a:hover {
+            text-decoration: underline;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .user-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: #1890ff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .logout-btn {
+            padding: 6px 12px;
+            background: #ff4d4f;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .main-content {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+
+        .page-header {
+            margin-bottom: 30px;
+        }
+
+        .page-title {
+            font-size: 24px;
+            color: #333;
+            margin-bottom: 8px;
+        }
+
+        .page-subtitle {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .form-header {
+            background: linear-gradient(135deg, #1890ff, #36cfc9);
+            color: white;
+            padding: 20px 30px;
+        }
+
+        .form-header h2 {
+            font-size: 18px;
+            margin: 0;
+        }
+
+        .form-body {
+            padding: 30px;
+        }
+
+        .form-section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+
+        .form-label {
+            font-size: 14px;
+            font-weight: 500;
+            color: #333;
+            margin-bottom: 6px;
+        }
+
+        .form-label.required::after {
+            content: ' *';
+            color: #ff4d4f;
+        }
+
+        .form-control {
+            padding: 10px 12px;
+            border: 2px solid #e8e8e8;
+            border-radius: 6px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: #1890ff;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(24, 144, 255, 0.1);
+        }
+
+        .form-control:invalid {
+            border-color: #ff4d4f;
+        }
+
+        textarea.form-control {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        select.form-control {
+            background-image: url('data:image/svg+xml;charset=US-ASCII,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 4 5"><path fill="%23999" d="M2 0L0 2h4zm0 5L0 3h4z"/></svg>');
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            background-size: 12px;
+            padding-right: 40px;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            appearance: none;
+        }
+
+        .form-help {
+            font-size: 12px;
+            color: #999;
+            margin-top: 4px;
+        }
+
+        .test-section {
+            background: #f8f9fa;
+            border: 2px dashed #d9d9d9;
+            border-radius: 8px;
+            padding: 20px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .test-section h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+
+        .test-section p {
+            color: #666;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            min-width: 100px;
+        }
+
+        .btn-primary {
+            background: #1890ff;
+            color: white;
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            background: #40a9ff;
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #666;
+            border: 2px solid #d9d9d9;
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            background: #e6f7ff;
+            color: #1890ff;
+            border-color: #91d5ff;
+        }
+
+        .btn-success {
+            background: #52c41a;
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            background: #73d13d;
+        }
+
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            padding-top: 20px;
+            border-top: 1px solid #f0f0f0;
+            margin-top: 30px;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 14px;
+            display: none;
+        }
+
+        .alert-success {
+            background-color: #f6ffed;
+            border: 2px solid #b7eb8f;
+            color: #52c41a;
+        }
+
+        .alert-error {
+            background-color: #fff2f0;
+            border: 2px solid #ffccc7;
+            color: #ff4d4f;
+        }
+
+        .alert-info {
+            background-color: #e6f7ff;
+            border: 2px solid #91d5ff;
+            color: #1890ff;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 0.8s ease-in-out infinite;
+            margin-right: 8px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .database-types {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .db-type-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px 10px;
+            border: 2px solid #e8e8e8;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+
+        .db-type-card:hover {
+            border-color: #1890ff;
+            background: #e6f7ff;
+        }
+
+        .db-type-card.selected {
+            border-color: #1890ff;
+            background: #e6f7ff;
+            color: #1890ff;
+        }
+
+        .db-type-icon {
+            font-size: 24px;
+            margin-bottom: 8px;
+        }
+
+        .db-type-name {
+            font-size: 12px;
+            font-weight: 500;
+            text-align: center;
+        }
+
+        @media (max-width: 768px) {
+            .form-row {
+                grid-template-columns: 1fr;
+            }
+            
+            .main-content {
+                padding: 20px 15px;
+            }
+            
+            .form-body {
+                padding: 20px 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <a href="dashboard.html" class="logo">
+                <i class="fas fa-rocket"></i> Auto API Platform
+            </a>
+            <div class="breadcrumb">
+                <a href="dashboard.html">仪表盘</a>
+                <i class="fas fa-chevron-right"></i>
+                <a href="datasource.html">数据源</a>
+                <i class="fas fa-chevron-right"></i>
+                <span>创建数据源</span>
+            </div>
+        </div>
+        <div class="header-right">
+            <div class="user-info">
+                <div class="user-avatar" id="userAvatar">A</div>
+                <span id="userName">加载中...</span>
+            </div>
+            <button class="logout-btn" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> 退出
+            </button>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="page-header">
+            <h1 class="page-title">创建数据源</h1>
+            <p class="page-subtitle">配置新的数据库连接</p>
+        </div>
+
+        <div class="form-container">
+            <div class="form-header">
+                <h2><i class="fas fa-database"></i> 数据源配置</h2>
+            </div>
+            
+            <div class="form-body">
+                <div id="alert" class="alert"></div>
+
+                <form id="datasourceForm">
+                    <div class="form-section">
+                        <h3 class="section-title">基本信息</h3>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label required" for="name">数据源名称</label>
+                                <input type="text" id="name" name="name" class="form-control" 
+                                       placeholder="请输入数据源名称" required maxlength="100">
+                                <div class="form-help">用于识别此数据源的名称</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label required" for="type">数据库类型</label>
+                                <select id="type" name="type" class="form-control" required>
+                                    <option value="">请选择数据库类型</option>
+                                    <option value="MYSQL">MySQL</option>
+                                    <option value="POSTGRESQL">PostgreSQL</option>
+                                    <option value="ORACLE">Oracle</option>
+                                    <option value="H2">H2 Database</option>
+                                    <option value="ELASTICSEARCH">Elasticsearch</option>
+                                    <option value="MONGODB">MongoDB</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group full-width">
+                            <label class="form-label" for="description">描述</label>
+                            <textarea id="description" name="description" class="form-control" 
+                                      placeholder="请输入数据源描述（可选）" maxlength="500"></textarea>
+                            <div class="form-help">描述此数据源的用途和特点</div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3 class="section-title">连接配置</h3>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label required" for="host">主机地址</label>
+                                <input type="text" id="host" name="host" class="form-control" 
+                                       placeholder="localhost" required maxlength="200">
+                                <div class="form-help">数据库服务器的IP地址或域名</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label required" for="port">端口</label>
+                                <input type="number" id="port" name="port" class="form-control" 
+                                       placeholder="3306" required min="1" max="65535">
+                                <div class="form-help">数据库服务端口号</div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="database">数据库名</label>
+                                <input type="text" id="database" name="database" class="form-control" 
+                                       placeholder="请输入数据库名称" maxlength="100">
+                                <div class="form-help">要连接的数据库名称</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label required" for="username">用户名</label>
+                                <input type="text" id="username" name="username" class="form-control" 
+                                       placeholder="请输入用户名" required maxlength="100">
+                            </div>
+                        </div>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label required" for="password">密码</label>
+                                <input type="password" id="password" name="password" class="form-control" 
+                                       placeholder="请输入密码" required maxlength="500">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="testQuery">测试查询</label>
+                                <input type="text" id="testQuery" name="testQuery" class="form-control" 
+                                       placeholder="SELECT 1" maxlength="500">
+                                <div class="form-help">用于测试连接的SQL语句</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-section">
+                        <h3 class="section-title">连接池配置</h3>
+                        
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label" for="maxPoolSize">最大连接数</label>
+                                <input type="number" id="maxPoolSize" name="maxPoolSize" class="form-control" 
+                                       placeholder="10" min="1" max="100" value="10">
+                                <div class="form-help">连接池最大连接数</div>
+                            </div>
+                            
+                            <div class="form-group">
+                                <label class="form-label" for="connectionTimeout">连接超时(秒)</label>
+                                <input type="number" id="connectionTimeout" name="connectionTimeout" class="form-control" 
+                                       placeholder="30" min="1" max="300" value="30">
+                                <div class="form-help">建立连接的超时时间</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="test-section">
+                        <h3><i class="fas fa-plug"></i> 连接测试</h3>
+                        <p>在保存数据源之前，建议先测试连接确保配置正确</p>
+                        <button type="button" id="testBtn" class="btn btn-success" onclick="testConnection()">
+                            <i class="fas fa-play"></i> 测试连接
+                        </button>
+                        <div id="testResult"></div>
+                    </div>
+
+                    <div class="form-actions">
+                        <a href="datasource.html" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> 取消
+                        </a>
+                        <button type="submit" id="submitBtn" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 保存数据源
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:8080';
+        
+        // 默认端口映射
+        const defaultPorts = {
+            'MYSQL': 3306,
+            'POSTGRESQL': 5432,
+            'ORACLE': 1521,
+            'H2': 9092,
+            'ELASTICSEARCH': 9200,
+            'MONGODB': 27017
+        };
+
+        // 检查登录状态
+        function checkAuth() {
+            const token = localStorage.getItem('token');
+            if (!token) {
+                window.location.href = 'login.html';
+                return false;
+            }
+            return true;
+        }
+
+        // 获取认证头
+        function getAuthHeaders() {
+            const token = localStorage.getItem('token');
+            return {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            };
+        }
+
+        // 初始化用户信息
+        function initUserInfo() {
+            const username = localStorage.getItem('username');
+            const realName = localStorage.getItem('realName');
+            
+            if (username) {
+                document.getElementById('userName').textContent = realName || username;
+                document.getElementById('userAvatar').textContent = (realName || username).charAt(0).toUpperCase();
+            }
+        }
+
+        // 显示提示信息
+        function showAlert(message, type = 'info') {
+            const alertEl = document.getElementById('alert');
+            alertEl.className = `alert alert-${type}`;
+            alertEl.innerHTML = `<i class="fas fa-${getAlertIcon(type)}"></i> ${message}`;
+            alertEl.style.display = 'block';
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    alertEl.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        function hideAlert() {
+            document.getElementById('alert').style.display = 'none';
+        }
+
+        function getAlertIcon(type) {
+            const icons = {
+                'success': 'check-circle',
+                'error': 'exclamation-circle',
+                'info': 'info-circle',
+                'warning': 'exclamation-triangle'
+            };
+            return icons[type] || 'info-circle';
+        }
+
+        // 设置按钮加载状态
+        function setButtonLoading(button, loading, originalText) {
+            if (loading) {
+                button.innerHTML = `<span class="loading"></span>${originalText}中...`;
+                button.disabled = true;
+            } else {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }
+        }
+
+        // 数据库类型变更处理
+        function handleTypeChange() {
+            const typeSelect = document.getElementById('type');
+            const portInput = document.getElementById('port');
+            const testQueryInput = document.getElementById('testQuery');
+            
+            const selectedType = typeSelect.value;
+            if (selectedType && defaultPorts[selectedType]) {
+                portInput.value = defaultPorts[selectedType];
+            }
+            
+            // 设置默认测试查询
+            const defaultQueries = {
+                'MYSQL': 'SELECT 1',
+                'POSTGRESQL': 'SELECT 1',
+                'ORACLE': 'SELECT 1 FROM DUAL',
+                'H2': 'SELECT 1',
+                'ELASTICSEARCH': '',
+                'MONGODB': ''
+            };
+            
+            if (selectedType && defaultQueries[selectedType] !== undefined) {
+                testQueryInput.value = defaultQueries[selectedType];
+            }
+        }
+
+        // 测试连接
+        async function testConnection() {
+            const form = document.getElementById('datasourceForm');
+            const formData = new FormData(form);
+            const testBtn = document.getElementById('testBtn');
+            const testResult = document.getElementById('testResult');
+            
+            // 验证必填字段
+            const requiredFields = ['name', 'type', 'host', 'port', 'username', 'password'];
+            for (const field of requiredFields) {
+                if (!formData.get(field)) {
+                    showAlert(`请填写${form.querySelector(`[name="${field}"]`).previousElementSibling.textContent.replace(' *', '')}`, 'error');
+                    return;
+                }
+            }
+            
+            hideAlert();
+            setButtonLoading(testBtn, true, '<i class="fas fa-play"></i> 测试连接');
+            testResult.innerHTML = '';
+            
+            // 构建测试数据
+            const testData = {
+                name: formData.get('name'),
+                type: formData.get('type'),
+                host: formData.get('host'),
+                port: parseInt(formData.get('port')),
+                database: formData.get('database'),
+                username: formData.get('username'),
+                password: formData.get('password'),
+                testQuery: formData.get('testQuery') || 'SELECT 1'
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/datasources/test-config`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(testData)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    testResult.innerHTML = `
+                        <div style="margin-top: 15px; padding: 15px; background: #f6ffed; border: 2px solid #b7eb8f; border-radius: 8px; color: #52c41a;">
+                            <i class="fas fa-check-circle"></i>
+                            连接测试成功！响应时间: ${result.data.responseTime || 0}ms
+                        </div>
+                    `;
+                    showAlert('连接测试成功！可以保存此数据源配置。', 'success');
+                } else {
+                    testResult.innerHTML = `
+                        <div style="margin-top: 15px; padding: 15px; background: #fff2f0; border: 2px solid #ffccc7; border-radius: 8px; color: #ff4d4f;">
+                            <i class="fas fa-times-circle"></i>
+                            连接测试失败：${result.message || '未知错误'}
+                        </div>
+                    `;
+                    showAlert(`连接测试失败：${result.message || '未知错误'}`, 'error');
+                }
+            } catch (error) {
+                testResult.innerHTML = `
+                    <div style="margin-top: 15px; padding: 15px; background: #fff2f0; border: 2px solid #ffccc7; border-radius: 8px; color: #ff4d4f;">
+                        <i class="fas fa-times-circle"></i>
+                        连接测试失败：${error.message}
+                    </div>
+                `;
+                showAlert(`连接测试失败：${error.message}`, 'error');
+            } finally {
+                setButtonLoading(testBtn, false, '<i class="fas fa-play"></i> 测试连接');
+            }
+        }
+
+        // 提交表单
+        async function submitForm(event) {
+            event.preventDefault();
+            
+            const form = event.target;
+            const formData = new FormData(form);
+            const submitBtn = document.getElementById('submitBtn');
+            
+            hideAlert();
+            setButtonLoading(submitBtn, true, '<i class="fas fa-save"></i> 保存数据源');
+            
+            // 构建提交数据
+            const data = {
+                name: formData.get('name'),
+                description: formData.get('description'),
+                type: formData.get('type'),
+                host: formData.get('host'),
+                port: parseInt(formData.get('port')),
+                database: formData.get('database'),
+                username: formData.get('username'),
+                password: formData.get('password'),
+                testQuery: formData.get('testQuery'),
+                maxPoolSize: parseInt(formData.get('maxPoolSize')) || 10,
+                connectionTimeout: parseInt(formData.get('connectionTimeout')) || 30,
+                enabled: true
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE_URL}/api/datasources`, {
+                    method: 'POST',
+                    headers: getAuthHeaders(),
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                
+                if (response.ok && result.success) {
+                    showAlert('数据源创建成功！即将跳转到数据源列表页面...', 'success');
+                    setTimeout(() => {
+                        window.location.href = 'datasource.html';
+                    }, 2000);
+                } else {
+                    showAlert(`创建失败：${result.message || '未知错误'}`, 'error');
+                }
+            } catch (error) {
+                showAlert(`创建失败：${error.message}`, 'error');
+            } finally {
+                setButtonLoading(submitBtn, false, '<i class="fas fa-save"></i> 保存数据源');
+            }
+        }
+
+        // 退出登录
+        function logout() {
+            if (confirm('确定要退出登录吗？')) {
+                localStorage.clear();
+                window.location.href = 'login.html';
+            }
+        }
+
+        // 页面初始化
+        window.addEventListener('load', () => {
+            if (!checkAuth()) return;
+            
+            initUserInfo();
+            
+            // 绑定事件
+            document.getElementById('type').addEventListener('change', handleTypeChange);
+            document.getElementById('datasourceForm').addEventListener('submit', submitForm);
+            
+            // 设置默认值
+            document.getElementById('host').value = 'localhost';
+        });
+    </script>
+</body>
+</html>

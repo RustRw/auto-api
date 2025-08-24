@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="100" height="100" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- 背景圆圈 -->
+  <circle cx="50" cy="50" r="45" fill="#1890ff" stroke="#fff" stroke-width="2"/>
+  
+  <!-- API图标 -->
+  <path d="M25 35h50v5H25v-5zm0 15h50v5H25v-5zm0 15h50v5H25v-5z" fill="#fff"/>
+  
+  <!-- 连接线 -->
+  <path d="M20 50h10M70 50h10" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+  
+  <!-- 节点 -->
+  <circle cx="15" cy="50" r="3" fill="#fff"/>
+  <circle cx="85" cy="50" r="3" fill="#fff"/>
+  
+  <!-- 文字 -->
+  <text x="50" y="85" text-anchor="middle" fill="#1890ff" font-family="Arial" font-size="12" font-weight="bold">API</text>
+</svg>

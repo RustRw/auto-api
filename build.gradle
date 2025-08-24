@@ -1,0 +1,64 @@
+plugins {
+    id 'java'
+    id 'org.springframework.boot' version '3.5.0' apply false
+    id 'io.spring.dependency-management' version '1.1.6' apply false
+}
+
+// 全局配置
+allprojects {
+    group = 'org.duqiu.fly'
+    version = '0.0.1-SNAPSHOT'
+    
+    repositories {
+        mavenCentral()
+    }
+}
+
+// 子项目通用配置
+subprojects {
+    apply plugin: 'java'
+    apply plugin: 'io.spring.dependency-management'
+    
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
+    
+    // 明确设置编译和运行时的Java版本
+    compileJava {
+        options.release = 21
+    }
+    
+    compileTestJava {
+        options.release = 21
+    }
+    
+    configurations {
+        compileOnly {
+            extendsFrom annotationProcessor
+        }
+    }
+    
+    // 通用依赖
+    dependencies {
+        compileOnly 'org.projectlombok:lombok'
+        annotationProcessor 'org.projectlombok:lombok'
+        
+        testImplementation 'org.springframework.boot:spring-boot-starter-test'
+        testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+    }
+    
+    // 依赖管理
+    dependencyManagement {
+        imports {
+            mavenBom 'org.springframework.boot:spring-boot-dependencies:3.5.0'
+        }
+    }
+    
+    tasks.named('test') {
+        useJUnitPlatform()
+    }
+}
+
+// 根项目不包含具体业务代码，不需要依赖

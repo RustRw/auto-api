@@ -1,0 +1,37 @@
+dependencies {
+    // 依赖common-core模块
+    implementation project(':common-core')
+    
+    // Spring依赖
+    implementation 'org.springframework.boot:spring-boot-starter'
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.boot:spring-boot-starter-web'
+    implementation 'org.springframework.boot:spring-boot-starter-validation'
+    
+    // JDBC Database drivers
+    runtimeOnly 'mysql:mysql-connector-java:8.0.33'
+    runtimeOnly 'org.postgresql:postgresql:42.7.1'
+    runtimeOnly 'com.oracle.database.jdbc:ojdbc8:23.3.0.23.09'
+    runtimeOnly 'com.clickhouse:clickhouse-jdbc:0.6.0'
+    runtimeOnly 'com.taosdata.jdbc:taos-jdbcdriver:3.2.4'
+    
+    // NoSQL databases
+    implementation 'org.mongodb:mongodb-driver-sync:4.11.1'
+    implementation 'org.springframework.boot:spring-boot-starter-data-elasticsearch'
+    
+    // Connection pooling
+    implementation 'com.zaxxer:HikariCP'
+    
+    // JSON处理
+    implementation 'com.fasterxml.jackson.core:jackson-databind'
+    
+    // 测试依赖
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.testcontainers:junit-jupiter'
+    testImplementation 'org.testcontainers:mysql'
+    testImplementation 'com.h2database:h2'
+    testImplementation 'org.springframework.boot:spring-boot-testcontainers'
+    testImplementation 'org.junit.platform:junit-platform-suite-api:1.10.0'
+    testImplementation 'org.junit.platform:junit-platform-suite-commons:1.10.0'  
+    testRuntimeOnly 'org.junit.platform:junit-platform-suite-engine:1.10.0'
+}
