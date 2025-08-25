@@ -261,7 +261,7 @@ function showLoading(show, loadingId = 'loading', contentId = 'table-content') {
  * @param {string} message - 错误消息
  */
 function showError(message) {
-    alert(message);
+    showNotification(message, 'error');
 }
 
 /**

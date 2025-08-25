@@ -9,7 +9,7 @@ import {
   ProColumns,
   ProTable,
 } from '@ant-design/pro-components';
-import { Button, message, Popconfirm, Tag, Space, Tooltip } from 'antd';
+import { Button, message, Popconfirm, Tag, Space, Tooltip, Drawer, List, Card } from 'antd';
 import React, { useRef, useState } from 'react';
 import { 
   PlusOutlined, 
@@ -17,12 +17,17 @@ import {
   DeleteOutlined, 
   PlayCircleOutlined,
   CheckCircleOutlined,
-  CloseCircleOutlined 
+  CloseCircleOutlined,
+  DatabaseOutlined 
 } from '@ant-design/icons';
 import { history } from '@umijs/max';
 
 const DataSourceList: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const [drawerVisible, setDrawerVisible] = useState(false);
+  const [selectedDataSource, setSelectedDataSource] = useState<API.DataSource | null>(null);
+  const [databases, setDatabases] = useState<string[]>([]);
+  const [loadingDatabases, setLoadingDatabases] = useState(false);
   const actionRef = useRef<ActionType>();
 
   const handleDelete = async (id: number) => {
@@ -48,6 +53,39 @@ const DataSourceList: React.FC = () => {
       message.error('连接测试失败');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleViewData = async (record: API.DataSource) => {
+    setSelectedDataSource(record);
+    setDrawerVisible(true);
+    setLoadingDatabases(true);
+    
+    try {
+      const response = await fetch(`http://localhost:8080/api/datasources/${record.id}/databases`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      if (response.ok) {
+        const result = await response.json();
+        if (result.success) {
+          setDatabases(result.data || []);
+        } else {
+          message.error(`获取数据库列表失败: ${result.message}`);
+          setDatabases([]);
+        }
+      } else {
+        message.error('获取数据库列表失败');
+        setDatabases([]);
+      }
+    } catch (error) {
+      message.error('获取数据库列表失败');
+      setDatabases([]);
+    } finally {
+      setLoadingDatabases(false);
     }
   };
 
@@ -140,8 +178,16 @@ const DataSourceList: React.FC = () => {
       title: '操作',
       valueType: 'option',
       fixed: 'right',
-      width: 200,
+      width: 260,
       render: (_, record) => [
+        <Tooltip key="view" title="查看数据">
+          <Button
+            type="text"
+            size="small"
+            icon={<DatabaseOutlined />}
+            onClick={() => handleViewData(record)}
+          />
+        </Tooltip>,
         <Tooltip key="test" title="测试连接">
           <Button
             type="text"
@@ -224,6 +270,40 @@ const DataSourceList: React.FC = () => {
         }}
         columns={columns}
       />
+      
+      <Drawer
+        title={`数据库列表 - ${selectedDataSource?.name}`}
+        placement="right"
+        width={400}
+        onClose={() => setDrawerVisible(false)}
+        open={drawerVisible}
+      >
+        {selectedDataSource && (
+          <Card size="small" style={{ marginBottom: 16 }}>
+            <p><strong>数据源:</strong> {selectedDataSource.name}</p>
+            <p><strong>类型:</strong> {selectedDataSource.type}</p>
+            <p><strong>主机:</strong> {selectedDataSource.host}:{selectedDataSource.port}</p>
+            <p><strong>用户:</strong> {selectedDataSource.username}</p>
+          </Card>
+        )}
+        
+        <List
+          loading={loadingDatabases}
+          size="small"
+          header={<div>数据库列表 ({databases.length})</div>}
+          bordered
+          dataSource={databases}
+          renderItem={(database) => (
+            <List.Item>
+              <Space>
+                <DatabaseOutlined />
+                {database}
+              </Space>
+            </List.Item>
+          )}
+          locale={{ emptyText: '暂无数据库' }}
+        />
+      </Drawer>
     </PageContainer>
   );
 };
