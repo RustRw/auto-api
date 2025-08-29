@@ -1,152 +1,99 @@
 import { defineConfig } from '@umijs/max';
 
 export default defineConfig({
-  antd: {},
-  access: {},
-  model: {},
-  initialState: {},
-  request: {},
-  layout: {
-    title: 'Auto API Platform',
-    locale: true,
-  },
   routes: [
     {
-      path: '/user',
+      path: '/user/login',
       layout: false,
-      routes: [
-        {
-          name: 'login',
-          path: '/user/login',
-          component: './User/Login',
-        },
-        {
-          name: 'register',
-          path: '/user/register',
-          component: './User/Register',
-        },
-      ],
+      component: './User/Login',
     },
     {
       path: '/welcome',
-      name: 'welcome',
-      icon: 'smile',
+      name: '欢迎',
+      icon: 'home',
       component: './Welcome',
+      layout: false,
     },
-    {
-      path: '/dashboard',
-      name: 'dashboard',
-      icon: 'dashboard',
-      component: './Dashboard',
-    },
+    // 数据源管理路由
     {
       path: '/datasource',
-      name: 'datasource',
+      name: '数据源管理',
       icon: 'database',
       routes: [
         {
-          path: '/datasource',
-          redirect: '/datasource/list',
-        },
-        {
-          name: 'list',
           path: '/datasource/list',
+          name: '数据源列表',
           component: './DataSource/List',
+          layout: false,
         },
         {
-          name: 'create',
           path: '/datasource/create',
+          name: '新建数据源',
           component: './DataSource/Create',
+          hideInMenu: true,
+          layout: false,
         },
         {
-          name: 'edit',
           path: '/datasource/edit/:id',
+          name: '编辑数据源',
           component: './DataSource/Edit',
           hideInMenu: true,
+          layout: false,
         },
       ],
     },
+    // API服务管理路由
     {
       path: '/apiservice',
-      name: 'apiservice',
+      name: 'API服务',
       icon: 'api',
       routes: [
         {
-          path: '/apiservice',
-          redirect: '/apiservice/list',
-        },
-        {
-          name: 'list',
           path: '/apiservice/list',
+          name: '服务列表',
           component: './ApiService/List',
+          layout: false,
         },
         {
-          name: 'create',
           path: '/apiservice/create',
+          name: '新建服务',
           component: './ApiService/Create',
+          hideInMenu: true,
         },
         {
-          name: 'edit',
           path: '/apiservice/edit/:id',
+          name: '编辑服务',
           component: './ApiService/Edit',
           hideInMenu: true,
         },
         {
-          name: 'testing',
+          path: '/apiservice/develop',
+          name: '服务开发',
+          component: './ApiService/Develop',
+          layout: false,
+        },
+        {
           path: '/apiservice/testing',
+          name: 'API测试',
           component: './ApiService/Testing',
         },
       ],
     },
+    // 监控中心路由
     {
       path: '/monitoring',
-      name: 'monitoring',
+      name: '监控中心',
       icon: 'monitor',
       routes: [
         {
-          path: '/monitoring',
-          redirect: '/monitoring/overview',
-        },
-        {
-          name: 'overview',
           path: '/monitoring/overview',
+          name: '监控概览',
           component: './Monitoring/Overview',
         },
         {
-          name: 'requests',
           path: '/monitoring/requests',
+          name: '请求监控',
           component: './Monitoring/Requests',
-        },
-        {
-          name: 'performance',
-          path: '/monitoring/performance',
-          component: './Monitoring/Performance',
-        },
-      ],
-    },
-    {
-      path: '/settings',
-      name: 'settings',
-      icon: 'setting',
-      routes: [
-        {
-          path: '/settings',
-          redirect: '/settings/profile',
-        },
-        {
-          name: 'profile',
-          path: '/settings/profile',
-          component: './Settings/Profile',
-        },
-        {
-          name: 'security',
-          path: '/settings/security',
-          component: './Settings/Security',
-        },
-        {
-          name: 'tenant',
-          path: '/settings/tenant',
-          component: './Settings/Tenant',
         },
       ],
     },
@@ -161,23 +108,12 @@ export default defineConfig({
     },
   ],
   npmClient: 'npm',
-  tailwindcss: {},
-  locale: {
-    default: 'zh-CN',
-    antd: true,
-    title: true,
-    baseNavigator: true,
-    baseSeparator: '-',
-  },
+  mfsu: false,
   proxy: {
-    '/api': {
+    '/api/**': {
       target: 'http://localhost:8080',
       changeOrigin: true,
       pathRewrite: { '^/api': '/api' },
     },
   },
-  mfsu: {
-    strategy: 'normal',
-  },
-  requestRecord: {},
 });

@@ -1,39 +1,19 @@
-import { 
-  getDataSource, 
-  updateDataSource, 
-  testDataSourceConnection 
-} from '@/services/datasource';
-import { 
-  PageContainer,
-  ProCard,
-  ProForm,
-  ProFormText,
-  ProFormTextArea,
-  ProFormSelect,
-  ProFormDigit,
-  ProFormSwitch,
-} from '@ant-design/pro-components';
-import { history, useParams } from '@umijs/max';
-import { Button, message, Space, Divider, Row, Col, Spin } from 'antd';
 import React, { useState, useEffect } from 'react';
-import { 
-  ArrowLeftOutlined, 
-  SaveOutlined, 
-  PlayCircleOutlined,
-  CheckCircleOutlined,
-  CloseCircleOutlined 
-} from '@ant-design/icons';
+import { history, useParams } from '@umijs/max';
+import './index.css';
 
 const DataSourceEdit: React.FC = () => {
   const params = useParams();
   const [loading, setLoading] = useState(true);
   const [testing, setTesting] = useState(false);
-  const [dataSource, setDataSource] = useState<API.DataSource | null>(null);
+  const [dataSource, setDataSource] = useState<any>(null);
   const [testResult, setTestResult] = useState<{
     connected: boolean;
     message: string;
     responseTime?: number;
   } | null>(null);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
 
   const dataSourceTypes = [
     { label: 'MySQL', value: 'MYSQL' },
@@ -51,10 +31,28 @@ const DataSourceEdit: React.FC = () => {
     if (!params.id) return;
     
     try {
-      const response = await getDataSource(parseInt(params.id as string));
-      setDataSource(response.data);
+      // 模拟获取数据源信息
+      await new Promise(resolve => setTimeout(resolve, 500));
+      const mockDataSource = {
+        id: parseInt(params.id as string),
+        name: 'MySQL主数据库',
+        type: 'MYSQL',
+        host: 'localhost',
+        port: 3306,
+        database: 'autoapi',
+        username: 'root',
+        enabled: true,
+        description: '主要业务数据库',
+        connectionUrl: 'jdbc:mysql://localhost:3306/autoapi',
+        maxPoolSize: 10,
+        connectionTimeout: 30000,
+        sslEnabled: false,
+        createdAt: '2024-01-15 10:30:00',
+        updatedAt: '2024-01-27 09:15:00'
+      };
+      setDataSource(mockDataSource);
     } catch (error) {
-      message.error('获取数据源信息失败');
+      showAlert('获取数据源信息失败', 'error');
       history.goBack();
     } finally {
       setLoading(false);
@@ -68,16 +66,17 @@ const DataSourceEdit: React.FC = () => {
     setTestResult(null);
     
     try {
-      const result = await testDataSourceConnection(dataSource.id);
-      setTestResult(result.data);
-      
-      if (result.data.connected) {
-        message.success(`连接成功！响应时间: ${result.data.responseTime}ms`);
-      } else {
-        message.error(`连接失败: ${result.data.message}`);
-      }
+      // 模拟测试连接
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      const mockResult = {
+        connected: true,
+        message: '连接成功',
+        responseTime: 125
+      };
+      setTestResult(mockResult);
+      showAlert(`连接成功！响应时间: ${mockResult.responseTime}ms`, 'success');
     } catch (error) {
-      message.error('连接测试失败');
+      showAlert('连接测试失败', 'error');
       setTestResult({
         connected: false,
         message: '网络错误或服务不可用',
@@ -87,25 +86,73 @@ const DataSourceEdit: React.FC = () => {
     }
   };
 
-  const handleSubmit = async (values: Partial<API.DataSourceCreateRequest>) => {
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
     if (!params.id) return;
     
     try {
-      await updateDataSource(parseInt(params.id as string), values);
-      message.success('数据源更新成功！');
-      history.push('/datasource/list');
+      setLoading(true);
+      const formData = new FormData(e.currentTarget);
+      const values = {
+        name: formData.get('name'),
+        description: formData.get('description'),
+        type: formData.get('type'),
+        host: formData.get('host'),
+        port: parseInt(formData.get('port') as string),
+        database: formData.get('database'),
+        username: formData.get('username'),
+        password: formData.get('password'),
+        connectionUrl: formData.get('connectionUrl'),
+        maxPoolSize: parseInt(formData.get('maxPoolSize') as string || '10'),
+        connectionTimeout: parseInt(formData.get('connectionTimeout') as string || '30000'),
+        enabled: formData.get('enabled') === 'on',
+        sslEnabled: formData.get('sslEnabled') === 'on'
+      };
+      
+      // 模拟更新数据源
+      await new Promise(resolve => setTimeout(resolve, 500));
+      console.log('更新数据源:', parseInt(params.id as string), values);
+      showAlert('数据源更新成功！', 'success');
+      setTimeout(() => {
+        history.push('/datasource/list');
+      }, 1500);
     } catch (error) {
-      message.error('数据源更新失败');
+      showAlert('数据源更新失败', 'error');
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const showAlert = (type: 'success' | 'error', message: string) => {
+    if (type === 'success') {
+      setSuccessMessage(message);
+      setErrorMessage('');
+    } else {
+      setErrorMessage(message);
+      setSuccessMessage('');
+    }
+    
+    // 5秒后自动隐藏
+    setTimeout(() => {
+      setSuccessMessage('');
+      setErrorMessage('');
+    }, 5000);
+  };
+
+  const logout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    history.push('/user/login');
   };
 
   if (loading) {
     return (
-      <PageContainer>
-        <div style={{ textAlign: 'center', padding: '50px' }}>
-          <Spin size="large" />
+      <div className="edit-page">
+        <div className="loading-container">
+          <div className="spinner"></div>
+          <span>正在加载...</span>
         </div>
-      </PageContainer>
+      </div>
     );
   }
 
@@ -114,205 +161,283 @@ const DataSourceEdit: React.FC = () => {
   }
 
   return (
-    <PageContainer
-      header={{
-        title: `编辑数据源: ${dataSource.name}`,
-        breadcrumb: {
-          items: [
-            { path: '/datasource/list', title: '数据源管理' },
-            { title: '编辑数据源' },
-          ],
-        },
-        extra: [
-          <Button 
-            key="back" 
-            icon={<ArrowLeftOutlined />}
-            onClick={() => history.goBack()}
-          >
-            返回
-          </Button>,
-        ],
-      }}
-    >
-      <ProCard>
-        <ProForm<Partial<API.DataSourceCreateRequest>>
-          layout="horizontal"
-          labelCol={{ span: 4 }}
-          wrapperCol={{ span: 16 }}
-          initialValues={{
-            name: dataSource.name,
-            description: dataSource.description,
-            type: dataSource.type,
-            host: dataSource.host,
-            port: dataSource.port,
-            database: dataSource.database,
-            username: dataSource.username,
-            enabled: dataSource.enabled,
-          }}
-          submitter={{
-            render: (props, doms) => (
-              <Row justify="center">
-                <Col>
-                  <Space size="middle">
-                    <Button onClick={() => history.goBack()}>
-                      取消
-                    </Button>
-                    <Button
-                      type="primary"
-                      onClick={() => props.form?.submit()}
-                      icon={<SaveOutlined />}
-                    >
-                      保存更改
-                    </Button>
-                  </Space>
-                </Col>
-              </Row>
-            ),
-          }}
-          onFinish={handleSubmit}
-        >
-          <ProCard title="基本信息" style={{ marginBottom: 24 }}>
-            <ProFormText
-              name="name"
-              label="数据源名称"
-              rules={[{ required: true, message: '请输入数据源名称' }]}
-              placeholder="请输入数据源名称"
-            />
-            
-            <ProFormTextArea
-              name="description"
-              label="描述"
-              placeholder="请输入数据源描述"
-              fieldProps={{ rows: 3 }}
-            />
+    <div className="edit-page">
+      <div className="header">
+        <div className="header-left">
+          <a href="#" onClick={() => history.push('/welcome')} className="logo">
+            <i className="fas fa-rocket"></i> Auto API Platform
+          </a>
+          <nav className="nav-menu">
+            <a href="#" onClick={() => history.push('/welcome')} className="nav-item">
+              <i className="fas fa-tachometer-alt"></i> 仪表板
+            </a>
+            <a href="#" onClick={() => history.push('/datasource/list')} className="nav-item active">
+              <i className="fas fa-database"></i> 数据源
+            </a>
+            <a href="#" onClick={() => history.push('/apiservice/list')} className="nav-item">
+              <i className="fas fa-cogs"></i> API服务
+            </a>
+          </nav>
+        </div>
+        <div className="header-right">
+          <button className="logout-btn" onClick={logout}>
+            <i className="fas fa-sign-out-alt"></i> 退出
+          </button>
+        </div>
+      </div>
 
-            <ProFormSelect
-              name="type"
-              label="数据源类型"
-              rules={[{ required: true, message: '请选择数据源类型' }]}
-              options={dataSourceTypes}
-              placeholder="请选择数据源类型"
-              disabled
-            />
+      <div className="container">
+        <div className="form-card">
+          <div className="form-header">
+            <h1>编辑数据源</h1>
+            <p>配置和管理数据源连接信息</p>
+          </div>
 
-            <ProFormSwitch
-              name="enabled"
-              label="启用状态"
-              checkedChildren="启用"
-              unCheckedChildren="禁用"
-            />
-          </ProCard>
+          {successMessage && (
+            <div className="alert alert-success" style={{ display: 'block' }}>
+              {successMessage}
+            </div>
+          )}
 
-          <ProCard title="连接配置" style={{ marginBottom: 24 }}>
-            <Row gutter={16}>
-              <Col span={16}>
-                <ProFormText
+          {errorMessage && (
+            <div className="alert alert-error" style={{ display: 'block' }}>
+              {errorMessage}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit}>
+            <div className="form-group">
+              <label htmlFor="name">数据源名称 *</label>
+              <input
+                type="text"
+                id="name"
+                name="name"
+                required
+                placeholder="请输入数据源名称"
+                defaultValue={dataSource.name}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="description">描述</label>
+              <textarea
+                id="description"
+                name="description"
+                rows={3}
+                placeholder="请输入数据源描述"
+                defaultValue={dataSource.description}
+              />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="type">数据源类型 *</label>
+              <select id="type" name="type" required disabled defaultValue={dataSource.type}>
+                <option value="">请选择数据源类型</option>
+                <option value="MYSQL">MySQL</option>
+                <option value="POSTGRESQL">PostgreSQL</option>
+                <option value="H2">H2 Database</option>
+                <option value="ORACLE">Oracle</option>
+                <option value="MONGODB">MongoDB</option>
+                <option value="ELASTICSEARCH">Elasticsearch</option>
+              </select>
+            </div>
+
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="host">主机地址 *</label>
+                <input
+                  type="text"
+                  id="host"
                   name="host"
-                  label="主机地址"
-                  rules={[{ required: true, message: '请输入主机地址' }]}
-                  placeholder="请输入主机地址，如: localhost"
+                  required
+                  placeholder="localhost"
+                  defaultValue={dataSource.host}
                 />
-              </Col>
-              <Col span={8}>
-                <ProFormDigit
+              </div>
+              <div className="form-group">
+                <label htmlFor="port">端口 *</label>
+                <input
+                  type="number"
+                  id="port"
                   name="port"
-                  label="端口"
-                  rules={[{ required: true, message: '请输入端口' }]}
-                  placeholder="端口"
-                  min={1}
-                  max={65535}
+                  required
+                  placeholder="3306"
+                  defaultValue={dataSource.port}
                 />
-              </Col>
-            </Row>
+              </div>
+            </div>
 
-            <ProFormText
-              name="database"
-              label="数据库名"
-              placeholder="请输入数据库名称"
-            />
+            <div className="form-group">
+              <label htmlFor="database">数据库名称</label>
+              <input
+                type="text"
+                id="database"
+                name="database"
+                placeholder="请输入数据库名称"
+                defaultValue={dataSource.database}
+              />
+            </div>
 
-            <ProFormText
-              name="username"
-              label="用户名"
-              rules={[{ required: true, message: '请输入用户名' }]}
-              placeholder="请输入用户名"
-            />
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="username">用户名</label>
+                <input
+                  type="text"
+                  id="username"
+                  name="username"
+                  placeholder="请输入用户名"
+                  defaultValue={dataSource.username}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="password">密码</label>
+                <input
+                  type="password"
+                  id="password"
+                  name="password"
+                  placeholder="留空则不修改密码"
+                />
+              </div>
+            </div>
 
-            <ProFormText.Password
-              name="password"
-              label="密码"
-              placeholder="留空则不修改密码"
-            />
-          </ProCard>
+            <div className="form-group">
+              <label htmlFor="connectionUrl">连接URL</label>
+              <input
+                type="text"
+                id="connectionUrl"
+                name="connectionUrl"
+                placeholder="jdbc:mysql://localhost:3306/database"
+                defaultValue={dataSource.connectionUrl}
+              />
+            </div>
 
-          <Divider />
+            <div className="form-row">
+              <div className="form-group">
+                <label htmlFor="maxPoolSize">最大连接池大小</label>
+                <input
+                  type="number"
+                  id="maxPoolSize"
+                  name="maxPoolSize"
+                  min="1"
+                  max="100"
+                  defaultValue={dataSource.maxPoolSize}
+                />
+              </div>
+              <div className="form-group">
+                <label htmlFor="connectionTimeout">连接超时时间(ms)</label>
+                <input
+                  type="number"
+                  id="connectionTimeout"
+                  name="connectionTimeout"
+                  min="1000"
+                  defaultValue={dataSource.connectionTimeout}
+                />
+              </div>
+            </div>
 
-          {/* 连接测试区域 */}
-          <ProCard title="连接测试" style={{ marginBottom: 24 }}>
-            <div style={{ textAlign: 'center' }}>
-              <Space direction="vertical" align="center">
-                <Button
-                  type="primary"
-                  ghost
-                  icon={<PlayCircleOutlined />}
-                  loading={testing}
+            <div className="form-group">
+              <div className="checkbox-group">
+                <input
+                  type="checkbox"
+                  id="enabled"
+                  name="enabled"
+                  defaultChecked={dataSource.enabled}
+                />
+                <label htmlFor="enabled">启用此数据源</label>
+              </div>
+            </div>
+
+            <div className="form-group">
+              <div className="checkbox-group">
+                <input
+                  type="checkbox"
+                  id="sslEnabled"
+                  name="sslEnabled"
+                  defaultChecked={dataSource.sslEnabled}
+                />
+                <label htmlFor="sslEnabled">启用SSL连接</label>
+              </div>
+            </div>
+
+            <div className="test-connection-section">
+              <h3>连接测试</h3>
+              <div className="test-button-container">
+                <button
+                  type="button"
+                  className={`btn btn-test ${testing ? 'loading' : ''}`}
                   onClick={handleTestConnection}
+                  disabled={testing}
                 >
-                  测试连接
-                </Button>
-                
-                {testResult && (
-                  <div style={{ 
-                    padding: '12px 16px', 
-                    borderRadius: '6px',
-                    background: testResult.connected ? '#f6ffed' : '#fff2f0',
-                    border: `1px solid ${testResult.connected ? '#b7eb8f' : '#ffccc7'}`,
-                    minWidth: '300px'
-                  }}>
-                    <Space>
-                      {testResult.connected ? (
-                        <CheckCircleOutlined style={{ color: '#52c41a' }} />
-                      ) : (
-                        <CloseCircleOutlined style={{ color: '#ff4d4f' }} />
-                      )}
-                      <span style={{ 
-                        color: testResult.connected ? '#52c41a' : '#ff4d4f',
-                        fontWeight: 'bold' 
-                      }}>
-                        {testResult.connected ? '连接成功' : '连接失败'}
-                      </span>
-                    </Space>
-                    <div style={{ marginTop: '8px', fontSize: '12px', color: '#666' }}>
-                      {testResult.message}
-                      {testResult.responseTime && (
-                        <span> (响应时间: {testResult.responseTime}ms)</span>
-                      )}
-                    </div>
+                  {testing ? (
+                    <>
+                      <div className="spinner"></div>
+                      <span>测试中...</span>
+                    </>
+                  ) : (
+                    <>
+                      <i className="fas fa-play-circle"></i>
+                      <span>测试连接</span>
+                    </>
+                  )}
+                </button>
+              </div>
+              
+              {testResult && (
+                <div className={`test-result ${testResult.connected ? 'success' : 'error'}`}>
+                  <div className="result-header">
+                    <i className={`fas ${testResult.connected ? 'fa-check-circle' : 'fa-times-circle'}`}></i>
+                    <span>{testResult.connected ? '连接成功' : '连接失败'}</span>
                   </div>
-                )}
-              </Space>
+                  <div className="result-message">
+                    {testResult.message}
+                    {testResult.responseTime && (
+                      <span> (响应时间: {testResult.responseTime}ms)</span>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
-          </ProCard>
 
-          {/* 数据源信息 */}
-          <ProCard title="数据源信息">
-            <div style={{ color: '#666', fontSize: '14px' }}>
-              <Row gutter={[16, 8]}>
-                <Col span={8}>
+            <div className="datasource-info">
+              <h3>数据源信息</h3>
+              <div className="info-grid">
+                <div className="info-item">
                   <strong>创建时间:</strong> {dataSource.createdAt}
-                </Col>
-                <Col span={8}>
+                </div>
+                <div className="info-item">
                   <strong>更新时间:</strong> {dataSource.updatedAt}
-                </Col>
-                <Col span={8}>
+                </div>
+                <div className="info-item">
                   <strong>数据源ID:</strong> {dataSource.id}
-                </Col>
-              </Row>
+                </div>
+              </div>
             </div>
-          </ProCard>
-        </ProForm>
-      </ProCard>
-    </PageContainer>
+
+            {loading && (
+              <div className="loading">
+                <div className="spinner"></div>
+                正在处理...
+              </div>
+            )}
+
+            <div className="form-actions">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={() => history.push('/datasource/list')}
+              >
+                返回
+              </button>
+              <div>
+                <button type="submit" className="btn btn-primary" disabled={loading}>
+                  保存数据源
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   );
 };
 

@@ -10,12 +10,14 @@
     "start:dev": "cross-env REACT_APP_ENV=dev MOCK=none UMI_ENV=dev umi dev"
   },
   "dependencies": {
+    "@ant-design/charts": "^2.6.2",
     "@ant-design/icons": "^4.8.0",
     "@ant-design/pro-components": "^2.4.0",
     "@ant-design/pro-form": "^2.4.0",
     "@ant-design/pro-layout": "^7.8.0",
     "@ant-design/pro-table": "^3.4.0",
     "@ant-design/use-emotion-css": "^1.0.4",
+    "@monaco-editor/react": "^4.7.0",
     "@umijs/route-utils": "^4.0.1",
     "antd": "^5.8.0",
     "classnames": "^2.3.2",

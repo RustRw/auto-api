@@ -1,9 +1,8 @@
 import Footer from '@/components/Footer';
-import { login } from '@/services/user';
 import { LockOutlined, UserOutlined } from '@ant-design/icons';
 import { LoginForm, ProFormCheckbox, ProFormText } from '@ant-design/pro-components';
 import { useEmotionCss } from '@ant-design/use-emotion-css';
-import { Helmet, history, useIntl, useModel, FormattedMessage } from '@umijs/max';
+import { Helmet, history } from '@umijs/max';
 import { Alert, message, Tabs } from 'antd';
 import React, { useState } from 'react';
 
@@ -23,10 +22,8 @@ const LoginMessage: React.FC<{
 };
 
 const Login: React.FC = () => {
-  const [userLoginState, setUserLoginState] = useState<API.LoginResult>({});
+  const [userLoginState, setUserLoginState] = useState<any>({});
   const [type, setType] = useState<string>('account');
-  const { initialState, setInitialState } = useModel('@@initialState');
-  const intl = useIntl();
 
   const containerClassName = useEmotionCss(() => {
     return {
@@ -40,47 +37,51 @@ const Login: React.FC = () => {
     };
   });
 
-  const fetchUserInfo = async () => {
-    const userInfo = await initialState?.fetchUserInfo?.();
-    if (userInfo) {
-      await setInitialState((s) => ({
-        ...s,
-        currentUser: userInfo,
-      }));
-    }
-  };
-
-  const handleSubmit = async (values: API.LoginParams) => {
+  const handleSubmit = async (values: any) => {
     try {
-      // 登录
-      const msg = await login({ ...values, type });
-      if (msg.status === 'ok') {
-        const defaultLoginSuccessMessage = intl.formatMessage({
-          id: 'pages.login.success',
-          defaultMessage: '登录成功！',
-        });
-        message.success(defaultLoginSuccessMessage);
-
-        // 存储token
-        if (msg.token) {
-          localStorage.setItem('token', msg.token);
-        }
-
-        await fetchUserInfo();
-        const urlParams = new URL(window.location.href).searchParams;
-        history.push(urlParams.get('redirect') || '/');
-        return;
-      }
-      console.log(msg);
-      // 如果失败去设置用户错误信息
-      setUserLoginState(msg);
-    } catch (error) {
-      const defaultLoginFailureMessage = intl.formatMessage({
-        id: 'pages.login.failure',
-        defaultMessage: '登录失败，请重试！',
+      const { username, password } = values;
+      
+      // 调用后端登录API
+      const response = await fetch('http://localhost:8080/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username, password })
       });
-      console.log(error);
-      message.error(defaultLoginFailureMessage);
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      
+      if (result.success && result.data?.token) {
+        // 保存登录信息到localStorage
+        localStorage.setItem('token', result.data.token);
+        localStorage.setItem('username', result.data.username);
+        localStorage.setItem('role', result.data.role);
+        localStorage.setItem('email', result.data.email);
+        localStorage.setItem('realName', result.data.realName);
+        
+        message.success(`登录成功！欢迎 ${result.data.realName || result.data.username}`);
+        
+        // 跳转到首页
+        setTimeout(() => {
+          history.push('/welcome');
+        }, 1000);
+      } else {
+        message.error(result.message || '登录失败，请检查用户名和密码');
+        setUserLoginState({ status: 'error', type: 'account' });
+      }
+    } catch (error: any) {
+      console.error('Login error:', error);
+      if (error.message.includes('Failed to fetch')) {
+        message.error('无法连接到服务器，请确保后端服务正在运行');
+      } else {
+        message.error(`登录失败: ${error.message}`);
+      }
+      setUserLoginState({ status: 'error', type: 'account' });
     }
   };
 
@@ -89,13 +90,7 @@ const Login: React.FC = () => {
   return (
     <div className={containerClassName}>
       <Helmet>
-        <title>
-          {intl.formatMessage({
-            id: 'menu.login',
-            defaultMessage: '登录页',
-          })}
-          - Auto API Platform
-        </title>
+        <title>登录 - Auto API Platform</title>
       </Helmet>
       <div
         style={{
@@ -110,12 +105,27 @@ const Login: React.FC = () => {
           }}
           logo={<img alt="logo" src="/logo.svg" />}
           title="Auto API Platform"
-          subTitle={intl.formatMessage({ id: 'pages.layouts.userLayout.title' })}
+          subTitle="企业级API服务管理平台"
           initialValues={{
             autoLogin: true,
           }}
+          actions={[
+            <div key="register" style={{ textAlign: 'center' }}>
+              还没有账号？
+              <a
+                style={{
+                  marginLeft: 8,
+                }}
+                onClick={() => {
+                  history.push('/user/register');
+                }}
+              >
+                立即注册
+              </a>
+            </div>,
+          ]}
           onFinish={async (values) => {
-            await handleSubmit(values as API.LoginParams);
+            await handleSubmit(values as any);
           }}
         >
           <Tabs
@@ -125,21 +135,13 @@ const Login: React.FC = () => {
             items={[
               {
                 key: 'account',
-                label: intl.formatMessage({
-                  id: 'pages.login.accountLogin.tab',
-                  defaultMessage: '账户密码登录',
-                }),
+                label: '账户密码登录',
               },
             ]}
           />
 
           {status === 'error' && loginType === 'account' && (
-            <LoginMessage
-              content={intl.formatMessage({
-                id: 'pages.login.accountLogin.errorMessage',
-                defaultMessage: '账户或密码错误',
-              })}
-            />
+            <LoginMessage content="账户或密码错误" />
           )}
           {type === 'account' && (
             <>
@@ -149,19 +151,11 @@ const Login: React.FC = () => {
                   size: 'large',
                   prefix: <UserOutlined />,
                 }}
-                placeholder={intl.formatMessage({
-                  id: 'pages.login.username.placeholder',
-                  defaultMessage: '用户名: admin',
-                })}
+                placeholder="用户名: admin 或 user"
                 rules={[
                   {
                     required: true,
-                    message: (
-                      <FormattedMessage
-                        id="pages.login.username.required"
-                        defaultMessage="请输入用户名!"
-                      />
-                    ),
+                    message: '用户名是必填项！',
                   },
                 ]}
               />
@@ -171,19 +165,11 @@ const Login: React.FC = () => {
                   size: 'large',
                   prefix: <LockOutlined />,
                 }}
-                placeholder={intl.formatMessage({
-                  id: 'pages.login.password.placeholder',
-                  defaultMessage: '密码: admin123',
-                })}
+                placeholder="密码: admin123 或 user123"
                 rules={[
                   {
                     required: true,
-                    message: (
-                      <FormattedMessage
-                        id="pages.login.password.required"
-                        defaultMessage="请输入密码！"
-                      />
-                    ),
+                    message: '密码是必填项！',
                   },
                 ]}
               />
@@ -196,17 +182,14 @@ const Login: React.FC = () => {
             }}
           >
             <ProFormCheckbox noStyle name="autoLogin">
-              <FormattedMessage id="pages.login.rememberMe" defaultMessage="自动登录" />
+              自动登录
             </ProFormCheckbox>
             <a
               style={{
                 float: 'right',
               }}
-              onClick={() => {
-                history.push('/user/register');
-              }}
             >
-              <FormattedMessage id="pages.login.registerAccount" defaultMessage="注册账户" />
+              忘记密码 ?
             </a>
           </div>
         </LoginForm>
